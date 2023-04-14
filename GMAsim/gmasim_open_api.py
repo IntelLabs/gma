@@ -1,3 +1,7 @@
+#Copyright(C) 2022 Intel Corporation
+#SPDX-License-Identifier: Apache-2.0
+#File : gmasim_open_api.py
+
 import zmq
 import sys
 import threading
