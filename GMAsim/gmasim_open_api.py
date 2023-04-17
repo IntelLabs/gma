@@ -136,6 +136,7 @@ class gmasim_client():
             if 1==len(set(df_phy_lte_start_ts['value'])) and 1==len(set(df_phy_lte_end_ts['value'])):
                 start_ts = df_phy_lte_start_ts['value'][0]
                 end_ts = df_phy_lte_end_ts['value'][0]
+                self.end_ts = end_ts
                 df_phy_lte_max_rate = df_phy_lte[df_phy_lte['name'] == 'max_rate'].reset_index(drop=True)
                 df_phy_lte_max_rate.insert(0,'end_ts', end_ts)
                 df_phy_lte_max_rate.insert(0,'start_ts', start_ts)
@@ -155,7 +156,7 @@ class gmasim_client():
             if 1==len(set(df_phy_wifi_start_ts['value'])) and 1==len(set(df_phy_wifi_end_ts['value'])):
                 start_ts = df_phy_wifi_start_ts['value'][0]
                 end_ts = df_phy_wifi_end_ts['value'][0]
-
+                self.end_ts = end_ts
                 df_phy_wifi_max_rate = df_phy_wifi[df_phy_wifi['name'] == 'max_rate'].reset_index(drop=True)
                 df_phy_wifi_max_rate.insert(0,'end_ts', end_ts)
                 df_phy_wifi_max_rate.insert(0,'start_ts', start_ts)
@@ -176,6 +177,7 @@ class gmasim_client():
                 start_ts = df_gma_start_ts['value'][0]
                 end_ts = df_gma_end_ts['value'][0]
 
+                self.end_ts = end_ts
                 df_load = df[df['name'] == 'tx_rate'].reset_index(drop=True)
                 df_load.insert(0,'end_ts', end_ts)
                 df_load.insert(0,'start_ts', start_ts)
@@ -230,8 +232,6 @@ class gmasim_client():
             else:
                 print(self.identity+" "+"ERROR, GMA timestamp is not the same")
         
-        self.end_ts = df_load['end_ts'][0]
-
         #return True, df_phy_lte_max_rate, df_phy_wifi_max_rate, df_load, df_rate, df_qos_rate, df_owd, df_split_ratio
 
         df_list.append(df_phy_lte_max_rate)
