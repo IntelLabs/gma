@@ -185,7 +185,7 @@ class gmasim_client():
                 #print(df_load)
 
                 df_rate = df[df['name'] == 'rate'].reset_index(drop=True)
-                df_rate = df_rate[df_rate['cid'] == 'All'].reset_index(drop=True)
+                #df_rate = df_rate[df_rate['cid'] == 'All'].reset_index(drop=True)
 
                 df_rate.insert(0,'end_ts', end_ts)
                 df_rate.insert(0,'start_ts', start_ts)
