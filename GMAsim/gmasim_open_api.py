@@ -40,7 +40,7 @@ class gmasim_client():
             action_json = self.config_json["gmasim_action_template"] #load the action format from template
             action_json["end_ts"]=self.end_ts
             action_json["downlink"]=self.config_json['gmasim_config']["downlink"]
-            action_json["split_ratio_list"] = action_list
+            action_json["action_list"] = action_list
 
             json_str = json.dumps(action_json, indent=2)
             #print(identity +" Send: "+ json_str)
@@ -85,7 +85,7 @@ class gmasim_client():
         df_list = []
         measure_ok = True
         df = pd.json_normalize(reply_json['metric_list']) 
-        print(df)
+        # print(df)
 
         if self.config_json['gmasim_config']['downlink']:
             df = df[df['direction'] == 'DL'].reset_index(drop=True)
