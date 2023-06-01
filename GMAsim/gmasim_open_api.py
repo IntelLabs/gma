@@ -143,6 +143,17 @@ class gmasim_client():
                 df_phy_lte_max_rate['unit'] = 'mbps'
                 #print(df_phy_lte_max_rate)
 
+                df_phy_lte_slice_id = df_phy_lte[df_phy_lte['name'] == 'slice_id'].reset_index(drop=True)
+                df_phy_lte_slice_id.insert(0,'end_ts', end_ts)
+                df_phy_lte_slice_id.insert(0,'start_ts', start_ts)
+                #print(df_phy_lte_slice_id)
+
+                df_phy_lte_rb_usage = df_phy_lte[df_phy_lte['name'] == 'rb_usage'].reset_index(drop=True)
+                df_phy_lte_rb_usage.insert(0,'end_ts', end_ts)
+                df_phy_lte_rb_usage.insert(0,'start_ts', start_ts)
+                df_phy_lte_rb_usage['unit'] = '%'
+                # print(df_phy_lte_rb_usage)
+
             else:
                 print(self.identity+" "+"ERROR, PHY LTE timestamp is not the same")
 
@@ -178,13 +189,13 @@ class gmasim_client():
                 end_ts = df_gma_end_ts['value'][0]
 
                 self.end_ts = end_ts
-                df_load = df[df['name'] == 'tx_rate'].reset_index(drop=True)
+                df_load = df_gma[df_gma['name'] == 'tx_rate'].reset_index(drop=True)
                 df_load.insert(0,'end_ts', end_ts)
                 df_load.insert(0,'start_ts', start_ts)
                 df_load['unit'] = 'mbps'
                 #print(df_load)
 
-                df_rate = df[df['name'] == 'rate'].reset_index(drop=True)
+                df_rate = df_gma[df_gma['name'] == 'rate'].reset_index(drop=True)
                 #df_rate = df_rate[df_rate['cid'] == 'All'].reset_index(drop=True)
 
                 df_rate.insert(0,'end_ts', end_ts)
@@ -192,34 +203,36 @@ class gmasim_client():
                 df_rate['unit'] = 'mbps'
                 #print(df_rate)
 
-                df_qos_rate = df[df['name'] == 'qos_rate'].reset_index(drop=True)
+                df_qos_rate = df_gma[df_gma['name'] == 'qos_rate'].reset_index(drop=True)
 
                 df_qos_rate.insert(0,'end_ts', end_ts)
                 df_qos_rate.insert(0,'start_ts', start_ts)
                 df_qos_rate['unit'] = 'mbps'
                 #print(df_qos_rate)
 
-                df_owd = df[df['name'] == 'owd'].reset_index(drop=True)
+                df_owd = df_gma[df_gma['name'] == 'owd'].reset_index(drop=True)
                 #df_owd = df_owd[df_owd['cid'] == 'All'].reset_index(drop=True)
                 df_owd.insert(0,'end_ts', end_ts)
                 df_owd.insert(0,'start_ts', start_ts)
                 df_owd['unit'] = 'ms'
                 #print(df_owd)
 
-                df_split_ratio = df[df['name'] == 'split_ratio'].reset_index(drop=True)
+                df_split_ratio = df_gma[df_gma['name'] == 'split_ratio'].reset_index(drop=True)
                 df_split_ratio.insert(0,'end_ts', end_ts)
                 df_split_ratio.insert(0,'start_ts', start_ts)
                 #print(df_split_ratio)
 
-                df_split_ratio = df[df['name'] == 'split_ratio'].reset_index(drop=True)
-                df_split_ratio.insert(0,'end_ts', end_ts)
-                df_split_ratio.insert(0,'start_ts', start_ts)
-                #print(df_split_ratio)
-
-                df_ap_id = df[df['name'] == 'ap_id'].reset_index(drop=True)
+                df_ap_id = df_gma[df_gma['name'] == 'ap_id'].reset_index(drop=True)
                 df_ap_id.insert(0,'end_ts', end_ts)
                 df_ap_id.insert(0,'start_ts', start_ts)
                 #print(df_ap_id)
+
+                df_delay_violation = df_gma[df_gma['name'] == 'delay_violation'].reset_index(drop=True)
+                df_delay_violation.insert(0,'end_ts', end_ts)
+                df_delay_violation.insert(0,'start_ts', start_ts)
+                df_delay_violation['unit'] = '%'
+
+                #print(df_delay_violation)
 
                 df_ok = df[df['name'] == 'measurement_ok'].reset_index(drop=True)
                 df_ok.insert(0,'end_ts', end_ts)
@@ -242,5 +255,7 @@ class gmasim_client():
         df_list.append(df_owd)
         df_list.append(df_split_ratio)
         df_list.append(df_ap_id)
-
+        df_list.append(df_phy_lte_slice_id)
+        df_list.append(df_phy_lte_rb_usage)
+        df_list.append(df_delay_violation)
         return measure_ok, df_list
