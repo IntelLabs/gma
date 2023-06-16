@@ -25,10 +25,17 @@ class gmasim_client():
     def connect(self):
         context = zmq.Context()
         self.socket = context.socket(zmq.DEALER)
+        self.socket.plain_username = bytes(self.config_json["algorithm_client_identity"], 'utf-8')
+        self.socket.plain_password = bytes(self.config_json["algorithm_client_password"], 'utf-8')
         self.socket.identity = self.identity.encode('ascii')
         self.socket.connect('tcp://localhost:'+str(self.config_json["algorithm_client_port"]))
         print('%s started' % (self.identity))
         print(self.identity + " Sending GMASim Start Request…")
+        if self.config_json["algorithm_client_identity"] == "test":
+            print("If no reposne after sending the start requst, the port forwarding may be broken...")
+        else:
+            print("If no response from the server, it could be the account id and password is wrong or the port forwardng is broken. "
+             +"You may change the 'algorithm_client_identity' and 'algorithm_client_password' to 'test' to test port fowarding")
 
         gma_start_request = self.config_json["gmasim_config"]
         self.socket.send(json.dumps(gma_start_request, indent=2).encode('utf-8'))#send start simulation request
