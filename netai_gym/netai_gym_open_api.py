@@ -1,6 +1,6 @@
 #Copyright(C) 2022 Intel Corporation
 #SPDX-License-Identifier: Apache-2.0
-#File : gmasim_open_api.py
+#File : netai_gym_open_api.py
 
 import zmq
 import sys
@@ -10,18 +10,15 @@ from random import randint, random
 import json
 import pandas as pd
 
-class gmasim_client():
-    """gmasim_client"""
+class api_client():
+    """netai_gym api_client"""
     def __init__(self, id, config_json):
-        if(config_json["enable_rl_agent"]):
-            self.identity = u'%s-%s-%d' % (config_json["algorithm_client_identity"],config_json["rl_agent_config"]["agent"], id)
-        else:
-            self.identity = u'%s-%s-%d' % (config_json["algorithm_client_identity"],"GMA", id)
+        self.identity = u'%s-%s-%d' % (config_json["algorithm_client_identity"],config_json["rl_agent_config"]["agent"], id)
         self.config_json=config_json
         self.socket = None
         self.end_ts = None # sync the timestamp between obs and action
 
-    #connect to GMAsim server using ZMQ socket
+    #connect to netai server using ZMQ socket
     def connect(self):
         context = zmq.Context()
         self.socket = context.socket(zmq.DEALER)
@@ -40,7 +37,7 @@ class gmasim_client():
         gma_start_request = self.config_json["gmasim_config"]
         self.socket.send(json.dumps(gma_start_request, indent=2).encode('utf-8'))#send start simulation request
 
-    #send action to GMAsim
+    #send action to netai server
     def send (self, action_list):
 
         if self.config_json['gmasim_config']['GMA']['respond_action_after_measurement']:
@@ -53,7 +50,7 @@ class gmasim_client():
             #print(identity +" Send: "+ json_str)
             self.socket.send(json_str.encode('utf-8')) #send action
 
-    #receive a msg from GMAsim
+    #receive a msg from netai server
     def recv (self):
 
         reply = self.socket.recv()
@@ -62,13 +59,13 @@ class gmasim_client():
         #print(relay_json)        
 
         if relay_json["type"] == "no-available-worker":
-            # no available gmasim worker, retry the request later
+            # no available netaisim worker, retry the request later
             print(self.identity+" Receive: "+reply.decode())
             print(self.identity+" "+"retry later...")
             quit()
 
         elif relay_json["type"] == "gmasim-end":
-            # simulation end from the gmasim
+            # simulation end from the netai server
             print(self.identity +" Receive: "+ reply.decode())
             print(self.identity+" "+"Simulation Completed.")
             quit()
@@ -87,7 +84,7 @@ class gmasim_client():
             print(self.identity +" "+ "***[ERROR]*** unkown msg type!")
             quit()
      
-    #process measurement from GMAsim
+    #process measurement from netai server
     def process_measurement (self, reply_json):
         df_list = []
         measure_ok = True

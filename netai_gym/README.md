@@ -2,7 +2,7 @@
 # Measurement Format
 
 An example that using this API is provided in [GMAClient](https://github.com/pinyaras/GMAClient).
-- The `gmasim_client.recv()` function returns measurements received from the GMAsim environment, as shown in the following example.
+- The `netai_gym_api_client.recv()` function returns measurements received from the NetAI Gym environment, as shown in the following example.
 ```python
 ok_flag, df_list = gmasim_client.recv() #okey_flag==true means this measurement is valid.
 df_phy_lte_max_rate = df_list[0] #The lte link capacity measured by each user
