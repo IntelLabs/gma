@@ -13,7 +13,7 @@ import pandas as pd
 class api_client():
     """netai_gym api_client"""
     def __init__(self, id, config_json):
-        self.identity = u'%s-%s-%d' % (config_json["algorithm_client_identity"],config_json["rl_agent_config"]["agent"], id)
+        self.identity = u'%s-%s-%d' % (config_json["session_name"],config_json["rl_agent_config"]["agent"], id)
         self.config_json=config_json
         self.socket = None
         self.end_ts = None # sync the timestamp between obs and action
@@ -22,17 +22,17 @@ class api_client():
     def connect(self):
         context = zmq.Context()
         self.socket = context.socket(zmq.DEALER)
-        self.socket.plain_username = bytes(self.config_json["algorithm_client_identity"], 'utf-8')
-        self.socket.plain_password = bytes(self.config_json["algorithm_client_password"], 'utf-8')
+        self.socket.plain_username = bytes(self.config_json["session_name"], 'utf-8')
+        self.socket.plain_password = bytes(self.config_json["session_id"], 'utf-8')
         self.socket.identity = self.identity.encode('ascii')
         self.socket.connect('tcp://localhost:'+str(self.config_json["algorithm_client_port"]))
         print('%s started' % (self.identity))
         print(self.identity + " Sending GMASim Start Request…")
-        if self.config_json["algorithm_client_identity"] == "test":
+        if self.config_json["session_name"] == "test":
             print("If no reposne after sending the start requst, the port forwarding may be broken...")
         else:
-            print("If no response from the server, it could be the account id and password is wrong or the port forwardng is broken. "
-             +"You may change the 'algorithm_client_identity' and 'algorithm_client_password' to 'test' to test port fowarding")
+            print("If no response from the server, it could be the session_name and session_id is wrong or the port forwardng is broken. "
+             +"You may change the 'session_name' and 'session_id' to 'test' to test port fowarding")
 
         gma_start_request = self.config_json["gmasim_config"]
         self.socket.send(json.dumps(gma_start_request, indent=2).encode('utf-8'))#send start simulation request
