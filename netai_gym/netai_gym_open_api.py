@@ -33,7 +33,7 @@ class api_client():
         else:
             print("If no response from the server, it could be the session_name and session_id is wrong or the port forwardng is broken. "
              +"You may change the 'session_name' and 'session_id' to 'test' to test port fowarding")
-
+            
         gma_start_request = self.config_json["gmasim_config"]
         self.socket.send(json.dumps(gma_start_request, indent=2).encode('utf-8'))#send start simulation request
 
@@ -66,9 +66,14 @@ class api_client():
 
         elif relay_json["type"] == "gmasim-end":
             # simulation end from the netai server
+            terminate_flag = True
+            measure_ok = False
+            df_list = []
+
             print(self.identity +" Receive: "+ reply.decode())
             print(self.identity+" "+"Simulation Completed.")
-            quit()
+            # quit()
+            return measure_ok, terminate_flag, df_list
             # return [],[],[],[],[]
         elif  relay_json["type"] == "gmasim-measurement":
             return self.process_measurement(relay_json)
@@ -88,6 +93,7 @@ class api_client():
     def process_measurement (self, reply_json):
         df_list = []
         measure_ok = True
+        terminate_flag = False
         df = pd.json_normalize(reply_json['metric_list']) 
         # print(df)
 
@@ -262,4 +268,5 @@ class api_client():
         df_list.append(df_phy_lte_slice_id)
         df_list.append(df_phy_lte_rb_usage)
         df_list.append(df_delay_violation)
-        return measure_ok, df_list
+
+        return measure_ok, terminate_flag, df_list
