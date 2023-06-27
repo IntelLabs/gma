@@ -10,6 +10,12 @@ from random import randint, random
 import json
 import pandas as pd
 
+class measurement_report:
+  def __init__(self, ok_flag, terminate_flag, df_list):
+    self.ok_flag = ok_flag
+    self.terminate_flag = terminate_flag
+    self.df_list = df_list
+
 class api_client():
     """netai_gym api_client"""
     def __init__(self, id, config_json):
@@ -67,13 +73,13 @@ class api_client():
         elif relay_json["type"] == "gmasim-end":
             # simulation end from the netai server
             terminate_flag = True
-            measure_ok = False
+            ok_flag = False
             df_list = []
 
             print(self.identity +" Receive: "+ reply.decode())
             print(self.identity+" "+"Simulation Completed.")
             # quit()
-            return measure_ok, terminate_flag, df_list
+            return measurement_report(ok_flag, terminate_flag, df_list)
             # return [],[],[],[],[]
         elif  relay_json["type"] == "gmasim-measurement":
             return self.process_measurement(relay_json)
@@ -92,7 +98,7 @@ class api_client():
     #process measurement from netai server
     def process_measurement (self, reply_json):
         df_list = []
-        measure_ok = True
+        ok_flag = True
         terminate_flag = False
         df = pd.json_normalize(reply_json['metric_list']) 
         # print(df)
@@ -251,7 +257,7 @@ class api_client():
                 if(df_ok['value'].min() < 1):
                     #print("[WARNING], some users may not have a valid measurement, for qos_steering case, the qos_test is not finished before a measurement return...")
                     #print(df_ok)
-                    measure_ok = False
+                    ok_flag = False
             else:
                 print(self.identity+" "+"ERROR, GMA timestamp is not the same")
         
@@ -269,4 +275,4 @@ class api_client():
         df_list.append(df_phy_lte_rb_usage)
         df_list.append(df_delay_violation)
 
-        return measure_ok, terminate_flag, df_list
+        return measurement_report(ok_flag, terminate_flag, df_list)
