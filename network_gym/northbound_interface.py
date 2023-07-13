@@ -1,6 +1,6 @@
 #Copyright(C) 2022 Intel Corporation
 #SPDX-License-Identifier: Apache-2.0
-#File : netai_gym_open_api.py
+#File : northbound_interface.py
 
 import zmq
 import sys
@@ -16,15 +16,15 @@ class measurement_report:
     self.terminate_flag = terminate_flag
     self.df_list = df_list
 
-class api_client():
-    """netai_gym api_client"""
+class northbound_interface_client():
+    """networkgym northbound interface client"""
     def __init__(self, id, config_json):
         self.identity = u'%s-%s-%d' % (config_json["session_name"],config_json["rl_agent_config"]["agent"], id)
         self.config_json=config_json
         self.socket = None
         self.end_ts = None # sync the timestamp between obs and action
 
-    #connect to netai server using ZMQ socket
+    #connect to network gym server using ZMQ socket
     def connect(self):
         context = zmq.Context()
         self.socket = context.socket(zmq.DEALER)
@@ -43,7 +43,7 @@ class api_client():
         gma_start_request = self.config_json["gmasim_config"]
         self.socket.send(json.dumps(gma_start_request, indent=2).encode('utf-8'))#send start simulation request
 
-    #send action to netai server
+    #send action to network gym server
     def send (self, action_list):
 
         if self.config_json['gmasim_config']['GMA']['respond_action_after_measurement']:
@@ -56,7 +56,7 @@ class api_client():
             #print(identity +" Send: "+ json_str)
             self.socket.send(json_str.encode('utf-8')) #send action
 
-    #receive a msg from netai server
+    #receive a msg from network gym server
     def recv (self):
 
         reply = self.socket.recv()
@@ -65,13 +65,13 @@ class api_client():
         #print(relay_json)        
 
         if relay_json["type"] == "no-available-worker":
-            # no available netaisim worker, retry the request later
+            # no available network gym worker, retry the request later
             print(self.identity+" Receive: "+reply.decode())
             print(self.identity+" "+"retry later...")
             quit()
 
         elif relay_json["type"] == "gmasim-end":
-            # simulation end from the netai server
+            # simulation end from the network gym server
             terminate_flag = True
             ok_flag = False
             df_list = []
@@ -95,7 +95,7 @@ class api_client():
             print(self.identity +" "+ "***[ERROR]*** unkown msg type!")
             quit()
      
-    #process measurement from netai server
+    #process measurement from network gym server
     def process_measurement (self, reply_json):
         df_list = []
         ok_flag = True
