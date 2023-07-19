@@ -10,15 +10,33 @@ from random import randint, random
 import json
 import pandas as pd
 
-class measurement_report:
-  def __init__(self, ok_flag, terminate_flag, df_list):
-    self.ok_flag = ok_flag
-    self.terminate_flag = terminate_flag
-    self.df_list = df_list
+class MeasurementReport:
+    """Measurement Report Structure.
+    """
+    def __init__(self, ok_flag, terminate_flag, df_list):
+        """Initil the measurement report.
 
-class northbound_interface_client():
-    """networkgym northbound interface client"""
+        Args:
+            ok_flag (Bool): indicate whehter the measurement is valid.
+            terminate_flag (_type_): indicate whether the environement is stopped (disconnected).
+            df_list (list[pandas.dataframe]): a list of dataframe that stores the network ststs
+        """
+        self.ok_flag = ok_flag
+        self.terminate_flag = terminate_flag
+        self.df_list = df_list
+
+class NorthboundInterface():
+    """networkgym northbound interface client.
+    
+    Northbound interface connects the network gym client to the network gym server. It commucates the network stats and policy.
+    """
     def __init__(self, id, config_json):
+        """Initial function
+
+        Args:
+            id (int): client ID
+            config_json (json): configuration file
+        """
         self.identity = u'%s-%s-%d' % (config_json["session_name"],config_json["rl_agent_config"]["agent"], id)
         self.config_json=config_json
         self.socket = None
@@ -26,6 +44,8 @@ class northbound_interface_client():
 
     #connect to network gym server using ZMQ socket
     def connect(self):
+        """Connect to the network gym server.
+        """
         context = zmq.Context()
         self.socket = context.socket(zmq.DEALER)
         self.socket.plain_username = bytes(self.config_json["session_name"], 'utf-8')
@@ -45,6 +65,11 @@ class northbound_interface_client():
 
     #send action to network gym server
     def send (self, action_list):
+        """Send the Policy to the server and environment.
+
+        Args:
+            action_list (json): netowkr policy
+        """
 
         if self.config_json['gmasim_config']['GMA']['respond_action_after_measurement']:
             action_json = self.config_json["gmasim_action_template"] #load the action format from template
@@ -58,6 +83,11 @@ class northbound_interface_client():
 
     #receive a msg from network gym server
     def recv (self):
+        """Receive a message from the network gym server.
+
+        Returns:
+            MeasurementReport: the measurement of network stats from the environment
+        """
 
         reply = self.socket.recv()
         relay_json = json.loads(reply)
@@ -79,7 +109,7 @@ class northbound_interface_client():
             print(self.identity +" Receive: "+ reply.decode())
             print(self.identity+" "+"Simulation Completed.")
             # quit()
-            return measurement_report(ok_flag, terminate_flag, df_list)
+            return MeasurementReport(ok_flag, terminate_flag, df_list)
             # return [],[],[],[],[]
         elif  relay_json["type"] == "gmasim-measurement":
             return self.process_measurement(relay_json)
@@ -97,6 +127,14 @@ class northbound_interface_client():
      
     #process measurement from network gym server
     def process_measurement (self, reply_json):
+        """Fliter the raw network measurements (json) and translate them to pandas.dataframe format.
+
+        Args:
+            reply_json (json): the message from the server
+
+        Returns:
+            MeasurementReport: MeasurementReport
+        """
         df_list = []
         ok_flag = True
         terminate_flag = False
@@ -275,4 +313,4 @@ class northbound_interface_client():
         df_list.append(df_phy_lte_rb_usage)
         df_list.append(df_delay_violation)
 
-        return measurement_report(ok_flag, terminate_flag, df_list)
+        return MeasurementReport(ok_flag, terminate_flag, df_list)
