@@ -35,7 +35,7 @@ class NorthboundInterface():
             id (int): client ID
             config_json (json): configuration file
         """
-        self.identity = u'%s-%s-%d' % (config_json["session_name"],config_json["rl_agent_config"]["agent"], id)
+        self.identity = u'%s-%d' % (config_json["session_name"], id)
         self.config_json=config_json
         self.socket = None
         self.end_ts = None # sync the timestamp between obs and action
