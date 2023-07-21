@@ -13,16 +13,14 @@ import pandas as pd
 class MeasurementReport:
     """Measurement Report Structure.
     """
-    def __init__(self, ok_flag, terminate_flag, df_list):
+    def __init__(self, ok_flag, df_list):
         """Initil the measurement report.
 
         Args:
             ok_flag (Bool): indicate whehter the measurement is valid.
-            terminate_flag (_type_): indicate whether the environement is stopped (disconnected).
             df_list (list[pandas.dataframe]): a list of dataframe that stores the network ststs
         """
         self.ok_flag = ok_flag
-        self.terminate_flag = terminate_flag
         self.df_list = df_list
 
 class NorthboundInterface():
@@ -102,15 +100,12 @@ class NorthboundInterface():
 
         elif relay_json["type"] == "gmasim-end":
             # simulation end from the network gym server
-            terminate_flag = True
             ok_flag = False
             df_list = []
 
             print(self.identity +" Receive: "+ reply.decode())
             print(self.identity+" "+"Simulation Completed.")
-            # quit()
-            return MeasurementReport(ok_flag, terminate_flag, df_list)
-            # return [],[],[],[],[]
+            quit()
         elif  relay_json["type"] == "gmasim-measurement":
             return self.process_measurement(relay_json)
 
@@ -137,7 +132,6 @@ class NorthboundInterface():
         """
         df_list = []
         ok_flag = True
-        terminate_flag = False
         df = pd.json_normalize(reply_json['metric_list']) 
         # print(df)
 
@@ -313,4 +307,4 @@ class NorthboundInterface():
         df_list.append(df_phy_lte_rb_usage)
         df_list.append(df_delay_violation)
 
-        return MeasurementReport(ok_flag, terminate_flag, df_list)
+        return MeasurementReport(ok_flag, df_list)
