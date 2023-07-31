@@ -96,6 +96,26 @@ sudo python3 ncm_ws38.py
 
 sudo python3 discover_ws38.py
 
+## How to create a new SSL certificate for GMA server
+
+openssl genrsa -out server.key 3072
+
+openssl req -new -key server.key -out server.csr (input user info)
+
+openssl x509 -req -in server.csr -out server.crt -signkey server.key -days 3650
+
+cp ./server.key ./python
+cp ./server.csr ./python
+cp ./server.crt ./python
+
+## How to update SSL certification for "gmaclient"
+
+sed '/./{s/^/        "&/;s/$/&\\n"/}' server.crt > client.crt
+
+Copy the contents of client.crt to ./client/root_certificates.hpp to replace std::string const cert content.
+
+Compile the GMA client again
+
 ## How to install "gmaclient"
 
 sudo apt-get update 
