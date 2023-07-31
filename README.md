@@ -84,18 +84,6 @@ modify the parameters in conf.ini: "interface", "WLAN_INTERFACE_CONFIG", "LTE_IN
 
 (eth0: ingress network interface for cellular, eth1: ingress network interface for wifi, eth2: egress network interface Internet access, eth3: network interface for remote management)
 
-## How to run the GMA server 
-
-cd ./server
-
-sudo ./gmaserver
-
-cd ./python
-
-sudo python3 ncm_ws38.py
-
-sudo python3 discover_ws38.py
-
 ## How to create a new SSL certificate for GMA server
 
 openssl genrsa -out server.key 3072
@@ -116,6 +104,17 @@ Copy the contents of client.crt to ./client/root_certificates.hpp to replace std
 Compile the GMA client again
 </pre>
 
+## How to run the GMA server 
+
+cd ./server
+
+sudo ./gmaserver
+
+cd ./python
+
+sudo python3 ncm_ws38.py
+
+sudo python3 discover_ws38.py
 
 ## How to install "gmaclient"
 
