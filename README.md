@@ -14,8 +14,9 @@ Unzip the downloaded file (multi-access-with-private-5g.zip) to a Linux machine 
 
 Go into the folder, and run the following commands:
 
-sudo chmod +x edgesoftware
-sudo ./edgesoftware download
+    sudo chmod +x edgesoftware
+
+    sudo ./edgesoftware download
 
 The GMA server source code are stored in the following folder: ./MultiAccess_with_Private_5G_Reference_Implementation_1.0.0/MultiAccess_with_Private_5G/GMA/gmaserver/serverapp/  
 
