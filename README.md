@@ -112,11 +112,10 @@ cp ./server.crt ./python
 
 <pre>
 sed '/./{s/^/        "&/;s/$/&\\n"/}' server.crt > client.crt
+Copy the contents of client.crt to ./client/root_certificates.hpp to replace std::string const cert content.
+Compile the GMA client again
 </pre>
 
-Copy the contents of client.crt to ./client/root_certificates.hpp to replace std::string const cert content.
-
-Compile the GMA client again
 
 ## How to install "gmaclient"
 
