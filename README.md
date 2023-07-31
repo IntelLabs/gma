@@ -110,8 +110,6 @@ cp ./gmaclient /home/gmaclient/
 
 cp ./config.txt /home/gmaclient/
 
-cp ./server.crt /home/gmaclient/
-
 ## How to update ./config.txt for "gmaclient"
 
 modify the following parameters in config.txt:  
