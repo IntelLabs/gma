@@ -84,6 +84,8 @@ modify the parameters in conf.ini: "interface", "WLAN_INTERFACE_CONFIG", "LTE_IN
 
 (eth0: ingress network interface for cellular, eth1: ingress network interface for wifi, eth2: egress network interface Internet access, eth3: network interface for remote management)
 
+![alt text](gma-testbed.png)
+
 ## How to create a new SSL certificate for GMA server
 
 openssl genrsa -out server.key 3072
