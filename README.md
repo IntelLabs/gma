@@ -95,7 +95,9 @@ openssl req -new -key server.key -out server.csr (input user info)
 openssl x509 -req -in server.csr -out server.crt -signkey server.key -days 3650
 
 cp ./server.key ./python
+
 cp ./server.csr ./python
+
 cp ./server.crt ./python
 
 ## How to update SSL certification for "gmaclient"
