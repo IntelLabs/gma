@@ -14,19 +14,30 @@ Unzip the downloaded file (multi-access-with-private-5g.zip) to a Linux machine 
 
 Go into the folder, and run the following commands:
 
-    sudo chmod +x edgesoftware
+   sudo chmod +x edgesoftware
 
-    sudo ./edgesoftware download
+   sudo ./edgesoftware download
 
-The GMA server source code are stored in the following folder: ./MultiAccess_with_Private_5G_Reference_Implementation_1.0.0/MultiAccess_with_Private_5G/GMA/gmaserver/serverapp/  
+The GMA server source files are stored in the following folder: ./MultiAccess_with_Private_5G_Reference_Implementation_1.0.0/MultiAccess_with_Private_5G/GMA/gmaserver/serverapp/, and there are three folders: 
+
+   ./ctrl  (for "gmactrl")
+
+   ./python (for "gmaserver")
+
+   ./server (for "gmaserver")
 
 
-## Required libraries (client)
+## Required libraries and tools (client)
+
+sudo apt-get update 
+
 sudo apt-get install libboost-all-dev
 
 sudo apt-get install libssl-dev
 
-## Required libraries and SW tools (server)
+sudo apt-get install net-tools
+
+## Required libraries and tools (server)
 sudo apt-get install iptables
 
 sudo apt-get install iproute2 
@@ -46,6 +57,7 @@ sudo pip install websockets
 sudo pip install pycryptodomex
 
 ## How to build "gmaclient"
+
 cd ./GMAlib/lib
 
 make -B
@@ -86,7 +98,7 @@ modify the parameters in conf.ini: "interface", "WLAN_INTERFACE_CONFIG", "LTE_IN
 
 ![GMA Testbed](https://github.com/IntelLabs/gma/blob/master/GMA-testbed.png)
 
-## How to create a new SSL certificate for GMA server
+## How to create a new SSL certificate for "gmaserver"
 
 openssl genrsa -out server.key 3072
 
@@ -111,31 +123,25 @@ Copy the contents of client.crt to ./client/root_certificates.hpp to replace std
 
 Compile the GMA client again
 
-## How to run the GMA server 
+## How to run "gmaserver" 
 
-cd ./server
+Open the first terminal on the server and run the following command:  
+	
+ 	cd ./server
+	
+ 	sudo ./gmaserver
 
-sudo ./gmaserver
+Open the 2nd terminal on the server and run the following command:  
 
-cd ./python
+	cd ./python
 
-sudo python3 ncm_ws38.py
+	sudo python3 ncm_ws38.py
 
-sudo python3 discover_ws38.py
+Open the 3rd terminal on the server and run the following command:  
 
-## How to install "gmaclient"
-
-sudo apt-get update 
-
-sudo apt-get install net-tools
-
-sudo makdir /home/gmaclient
-
-sudo chmod 777 ./gmaclient
-
-cp ./gmaclient /home/gmaclient/
-
-cp ./config.txt /home/gmaclient/
+ 	cd ./python
+	
+ 	sudo python3 discover_ws38.py
 
 ## How to update ./config.txt for "gmaclient"
 
@@ -153,6 +159,6 @@ modify the following parameters in config.txt:
 
 ## How to start "gmaclient" 
 
-cd /home/gmaclient
+cd ./client
 
 sudo ./gmaclient
