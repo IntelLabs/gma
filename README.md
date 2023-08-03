@@ -17,7 +17,7 @@ Go into the folder, and run the following commands:
 	sudo chmod +x edgesoftware
 	sudo ./edgesoftware download
 
-The GMA server source files are stored in the following folder: ./MultiAccess_with_Private_5G_Reference_Implementation_1.0.0/MultiAccess_with_Private_5G/GMA/gmaserver/serverapp/, and there are three folders: 
+Under./MultiAccess_with_Private_5G_Reference_Implementation_1.0.0/MultiAccess_with_Private_5G/GMA/gmaserver/serverapp/, there are three folders to store GMA server source files: 
 
 	./ctrl  (for "gmactrl")
 	./python (for "gmaserver")
