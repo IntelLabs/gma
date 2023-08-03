@@ -6,7 +6,7 @@ Generic Multi-Access (GMA) Network Virtualization is a client/server-based softw
 
 ubuntu20.04 
 
-## How to download GMA server source files 
+## Step 1: download GMA server source files on GMA server
 
 Download the installer from https://software.intel.com/iot/edgesoftwarehub/download/home/multi-access-with-private-5g . You would need to create an account if you don't have one. 
 
@@ -23,9 +23,11 @@ Under./MultiAccess_with_Private_5G_Reference_Implementation_1.0.0/MultiAccess_wi
 	./python (for "gmaserver")
    	./server (for "gmaserver")
 
-## Required libraries and tools (client)
+## Step 2: download GMA client source files on GMA client 
 
-sudo apt-get update 
+Download both folders ("GMAlib" and "client") in this repo 
+
+## Step 3: install required libraries and tools on GMA client
 
 sudo apt-get install libboost-all-dev
 
@@ -33,7 +35,7 @@ sudo apt-get install libssl-dev
 
 sudo apt-get install net-tools
 
-## Required libraries and tools (server)
+## Step 4: install required libraries and tools on GMA server
 
 sudo apt-get install iptables
 
@@ -53,27 +55,17 @@ sudo pip install websockets
 
 sudo pip install pycryptodomex
 
-## How to build "gmaclient"
-
-cd ./GMAlib/lib
-
-make -B
-
-cd ../../client
-
-make -B
-
-## How to build "gmaserver"
+## Step 5: build "gmaserver" on GMA server
 cd ./server
 
 make -B
 
-## How to build "gmactrl"
+## Step 6: build "gmactrl" on GMA server
 cd ./ctrl
 
 make -B
 
-## How to install "gmaserver"
+## Step 7: install configuration files on GMA server
 
 sudo makdir /home/ncm_ws
 
@@ -81,9 +73,9 @@ cp ./server/conf.ini /home/ncm_ws
 
 cp ./server/server_config.txt /home/ncm_ws
 
-## How to update ./conf.ini for "gmaserver"
+## Step 8: update ./conf.ini on GMA server
 
-modify the parameters in conf.ini: "interface", "WLAN_INTERFACE_CONFIG", "LTE_INTERFACE_CONFIG", "FORWARD_INTERFACE_CONFIG" as follows 
+modify the parameters in conf.ini (under /home/ncm_ws): "interface", "WLAN_INTERFACE_CONFIG", "LTE_INTERFACE_CONFIG", "FORWARD_INTERFACE_CONFIG" as follows 
 
 	interface=eth0
 	WLAN_INTERFACE_CONFIG = eth1
@@ -95,7 +87,7 @@ modify the parameters in conf.ini: "interface", "WLAN_INTERFACE_CONFIG", "LTE_IN
 
 ![GMA Testbed](https://github.com/IntelLabs/gma/blob/master/GMA-testbed.png)
 
-## How to create a new SSL certificate for "gmaserver"
+## Step 9: create a new SSL certificate on GMA server
 
 openssl genrsa -out server.key 3072
 
@@ -109,7 +101,7 @@ cp ./server.csr ./python
 
 cp ./server.crt ./python
 
-## How to update SSL certification for "gmaclient"
+## Step 10: update SSL certification on GMA client
 
 Run the following command to generate client.crt from server.crt
 <pre>
@@ -118,9 +110,17 @@ sed '/./{s/^/        "&/;s/$/&\\n"/}' server.crt > client.crt
 
 Copy the contents of client.crt to ./client/root_certificates.hpp to replace std::string const cert content.
 
-Compile the GMA client again
+## Step 11: build "gmaclient" on GMA client
 
-## How to run "gmaserver" 
+cd ./GMAlib/lib
+
+make -B
+
+cd ../../client
+
+make -B
+
+## Step 12: run "gmaserver" on GMA server
 
 Open the first terminal on the server and run the following command:  
 	
@@ -140,9 +140,9 @@ Open the 3rd terminal on the server and run the following command:
 	
  	sudo python3 discover_ws38.py
 
-## How to update ./config.txt for "gmaclient"
+## Step 13: update configuration on GMA client
 
-modify the following parameters in config.txt:  
+modify the following parameters in config.txt (under ./client):  
 
 	SERVER_NCM_IP=a.b.c.d
 
@@ -154,7 +154,7 @@ modify the following parameters in config.txt:
 
 (wlan0: network interface for wifi, wwan0: network interface for cellular, gmaserver.apps.local: local DNS name for GMA service running at Edge, a.b.c.d is the (GMA service) IP address at the edge node via LTE)
 
-## How to start "gmaclient" 
+## Step 14: start "gmaclient" on GMA client
 
 cd ./client
 
