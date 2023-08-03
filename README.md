@@ -15,7 +15,7 @@ Unzip the downloaded file (multi-access-with-private-5g.zip) to a Linux machine 
 Go into the folder, and run the following commands:
 
    sudo chmod +x edgesoftware
-
+   
    sudo ./edgesoftware download
 
 The GMA server source files are stored in the following folder: ./MultiAccess_with_Private_5G_Reference_Implementation_1.0.0/MultiAccess_with_Private_5G/GMA/gmaserver/serverapp/, and there are three folders: 
@@ -23,7 +23,7 @@ The GMA server source files are stored in the following folder: ./MultiAccess_wi
    ./ctrl  (for "gmactrl")
 
    ./python (for "gmaserver")
-
+   
    ./server (for "gmaserver")
 
 
@@ -38,6 +38,7 @@ sudo apt-get install libssl-dev
 sudo apt-get install net-tools
 
 ## Required libraries and tools (server)
+
 sudo apt-get install iptables
 
 sudo apt-get install iproute2 
