@@ -45,7 +45,7 @@ sudo pip install websockets
 
 sudo pip install pycryptodomex
 
-## How to build "gmacient"
+## How to build "gmaclient"
 cd ./GMAlib/lib
 
 make -B
