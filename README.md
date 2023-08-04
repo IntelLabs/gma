@@ -209,3 +209,9 @@ Traffic Flow Configuration (for uplink only): tfc [clientIndex] [flowId] [protoT
                3: icmp
                portStart: the lower bound of (UDP or TCP) destination port (not used if "icmp")
                portEnd: the upper bound of (UDP or TCP) destination port (not used if "icmp")
+
+## Testcases & Examples
+
+Please check out testcases & examples from this link: 
+
+               https://www.intel.com/content/www/us/en/developer/articles/reference-implementation/multi-access-with-private-5g.html
