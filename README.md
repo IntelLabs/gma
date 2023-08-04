@@ -23,7 +23,7 @@ Under./MultiAccess_with_Private_5G_Reference_Implementation_1.0.0/MultiAccess_wi
 	./python (for "gmaserver")
    	./server (for "gmaserver")
 
-## Step 2: download "gmasclient" source files on GMA client 
+## Step 2: download "gmaclient" source files on GMA client 
 
 Download both folders ("GMAlib" and "client") in this repo 
 
