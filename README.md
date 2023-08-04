@@ -4,7 +4,18 @@ Generic Multi-Access (GMA) Network Virtualization is a client/server-based softw
 
 ## OS
 
-ubuntu20.04 
+ubuntu20.04 64bit
+
+## HW and Network Configuration (for a simple two-node setup)
+
+Setup two Linux machines to operate as GMA client and GMA server, reespectively
+
+Install two ethernet adapters on both machines and have them connected (one is used as "Wi-Fi" and the other is used as "LTE")
+
+Create two default routes (with different subnets) on the GMA client using the two Ethernet connections
+
+Configure the GMA server as the gateway for each subnet
+
 
 ## Step 1: download "gmaserver" and "gmactrl" source files on the linux machine operating as GMA server
 
