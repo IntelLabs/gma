@@ -6,7 +6,7 @@ Generic Multi-Access (GMA) Network Virtualization is a client/server-based softw
 
 ubuntu20.04 
 
-## Step 1: download GMA server source files on GMA server
+## Step 1: download "gmaserver" and "gmactrl" source files on GMA server
 
 Download the installer from https://software.intel.com/iot/edgesoftwarehub/download/home/multi-access-with-private-5g . You would need to create an account if you don't have one. 
 
@@ -23,7 +23,7 @@ Under./MultiAccess_with_Private_5G_Reference_Implementation_1.0.0/MultiAccess_wi
 	./python (for "gmaserver")
    	./server (for "gmaserver")
 
-## Step 2: download GMA client source files on GMA client 
+## Step 2: download "gmasclient" source files on GMA client 
 
 Download both folders ("GMAlib" and "client") in this repo 
 
@@ -73,7 +73,7 @@ cp ./server/conf.ini /home/ncm_ws
 
 cp ./server/server_config.txt /home/ncm_ws
 
-## Step 8: update ./conf.ini on GMA server
+## Step 8: update network configuration on GMA server
 
 modify the parameters in conf.ini (under /home/ncm_ws): "interface", "WLAN_INTERFACE_CONFIG", "LTE_INTERFACE_CONFIG", "FORWARD_INTERFACE_CONFIG" as follows 
 
@@ -140,7 +140,7 @@ Open the 3rd terminal on the server and run the following command:
 	
  	sudo python3 discover_ws38.py
 
-## Step 13: update configuration on GMA client
+## Step 13: update network configuration on GMA client
 
 modify the following parameters in config.txt (under ./client):  
 
