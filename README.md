@@ -14,6 +14,10 @@ Install two ethernet adapters on both machines and have them connected (one is u
 
 Create two default routes (with different subnets) on GMA client using the two Ethernet connections, and configure the GMA server as their gateway, respectively
 
+Install a 3rd ethernet adapter on GMA server, and configure it as the default route for Internet access
+
+Optionally, setup a 3rd Linux machine to operate as GMA controller. Alternatively, use the same machine for GMA server and GMA controller
+
 
 ## Step 1: download "gmaserver" and "gmactrl" source files on GMA server
 
