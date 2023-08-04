@@ -12,9 +12,7 @@ Setup two Linux machines to operate as GMA client and GMA server, reespectively
 
 Install two ethernet adapters on both machines and have them connected (one is used as "Wi-Fi" and the other is used as "LTE")
 
-Create two default routes (with different subnets) on the GMA client using the two Ethernet connections
-
-Configure the GMA server as the gateway for each subnet
+Create two default routes (with different subnets) on the GMA client using the two Ethernet connections, and configure the GMA server as their gateway, respectively
 
 
 ## Step 1: download "gmaserver" and "gmactrl" source files on the linux machine operating as GMA server
