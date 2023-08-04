@@ -172,13 +172,13 @@ run the following commands to control traffic splitting for a GMA client:
 Traffic Steering Command: tsc [clientIndex] [RTtsc] [NRTtsc] [NRTk1] [NRTk2] [NRTl]
                
 	       clientIndex: the last two bytes of the client IP address
-               RTtsc: traffic steering command for RT flow
+               RTtsc: traffic steering command for RT (Real-Time) flow
                0: default (DL & UL over Wi-Fi for RT flow)
                1: DL-over-LTE for RT flow
                2: UL-over-LTE for RT flow
                3: UL & DL-over-LTE for RT flow
                4: no update for RT flow
-               NRTtsc: traffic steering command for NRT flow
+               NRTtsc: traffic steering command for NRT (Non Real-Time or Best-Effort) flow
                0: disable dynamic DL splitting for NRT flow
                1: enable dynamic DL splitting for NRT flow 
                16: no update for NRT flow
