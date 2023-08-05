@@ -88,7 +88,7 @@ cp ./server/server_config.txt /home/ncm_ws
 
 ## Step 8: configure network interface & downlink flow on GMA server
 
-modify the parameters in conf.ini (under /home/ncm_ws): "interface", "WLAN_INTERFACE_CONFIG", "LTE_INTERFACE_CONFIG", "FORWARD_INTERFACE_CONFIG" as follows 
+Modify the parameters in conf.ini (under /home/ncm_ws): "interface", "WLAN_INTERFACE_CONFIG", "LTE_INTERFACE_CONFIG", "FORWARD_INTERFACE_CONFIG" according to your local environment: 
 
 	interface=eth0
 	WLAN_INTERFACE_CONFIG = eth1
@@ -98,12 +98,14 @@ modify the parameters in conf.ini (under /home/ncm_ws): "interface", "WLAN_INTER
 
 (eth0: ingress network interface for cellular, eth1: ingress network interface for wifi, eth2: egress network interface Internet access, eth3: network interface for remote management)
 
-modify the parameters in confi.ini: "RT_FLOW_DSCP", "HR_FLOW_DSCP" as follows
+Modify the parameters in confi.ini: "RT_FLOW_DSCP", "HR_FLOW_DSCP" according to your local environment: 
 
 	RT_FLOW_DSCP = 2
 	HR_FLOW_DSCP = 1
 
 (downlink packets with DSCP = 2 are classified as the "Real-Time" flow using the steering mode, and those with DSCP = 1 are classified as the "High-Reliability" flow using the duplication mode, and all other packets are classified as the "Non Real-Time (Best Effort)" flow using the splitting mode)
+
+Use the tfc command in step 15 to configure uplink flows. Notice that uplink "Non Real-Time" flow uses the steering mode because the splitting mode is only supported for downlink in this release.  
 
 ![GMA Testbed](https://github.com/IntelLabs/gma/blob/master/GMA-testbed.png)
 
