@@ -86,7 +86,7 @@ cp ./server/conf.ini /home/ncm_ws
 
 cp ./server/server_config.txt /home/ncm_ws
 
-## Step 8: update network configuration on GMA server
+## Step 8: update network configuration & downlink flow on GMA server
 
 modify the parameters in conf.ini (under /home/ncm_ws): "interface", "WLAN_INTERFACE_CONFIG", "LTE_INTERFACE_CONFIG", "FORWARD_INTERFACE_CONFIG" as follows 
 
@@ -97,6 +97,13 @@ modify the parameters in conf.ini (under /home/ncm_ws): "interface", "WLAN_INTER
 	MEASURE_REPORT_NIC = eth3
 
 (eth0: ingress network interface for cellular, eth1: ingress network interface for wifi, eth2: egress network interface Internet access, eth3: network interface for remote management)
+
+modify the parameters in confi.ini: "RT_FLOW_DSCP", "HR_FLOW_DSCP" as follows
+
+	RT_FLOW_DSCP = 2
+	HR_FLOW_DSCP = 1
+
+(a downlink packet with DSCP = 2 will be classified as the "Real-Time" flow, and any packet with DSCP = 1 will be classified as the "High-Reliability" flow using the duplication steering mode)
 
 ![GMA Testbed](https://github.com/IntelLabs/gma/blob/master/GMA-testbed.png)
 
