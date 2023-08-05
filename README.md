@@ -86,7 +86,7 @@ cp ./server/conf.ini /home/ncm_ws
 
 cp ./server/server_config.txt /home/ncm_ws
 
-## Step 8: update network configuration & downlink flow on GMA server
+## Step 8: configure network interface & downlink flow on GMA server
 
 modify the parameters in conf.ini (under /home/ncm_ws): "interface", "WLAN_INTERFACE_CONFIG", "LTE_INTERFACE_CONFIG", "FORWARD_INTERFACE_CONFIG" as follows 
 
@@ -103,7 +103,7 @@ modify the parameters in confi.ini: "RT_FLOW_DSCP", "HR_FLOW_DSCP" as follows
 	RT_FLOW_DSCP = 2
 	HR_FLOW_DSCP = 1
 
-(a downlink packet with DSCP = 2 will be classified as the "Real-Time" flow, and any packet with DSCP = 1 will be classified as the "High-Reliability" flow using the duplication steering mode)
+(downlink packets with DSCP = 2 are classified as the "Real-Time" flow using the steering mode, and those with DSCP = 1 are classified as the "High-Reliability" flow using the duplication mode, and all other packets are classified as the "Non Real-Time (Best Effort)" flow using the splitting mode)
 
 ![GMA Testbed](https://github.com/IntelLabs/gma/blob/master/GMA-testbed.png)
 
