@@ -103,7 +103,7 @@ Modify the parameters in confi.ini: "RT_FLOW_DSCP", "HR_FLOW_DSCP" according to 
 	RT_FLOW_DSCP = 2
 	HR_FLOW_DSCP = 1
 
-(downlink packets with DSCP = 2 are classified as the "Real-Time" flow using the steering mode, and those with DSCP = 1 are classified as the "High-Reliability" flow using the duplication mode, and all other packets are classified as the "Non Real-Time (Best Effort)" flow using the splitting mode)
+Downlink packets with DSCP = 2 are classified as the "Real-Time" flow using the steering mode, and those with DSCP = 1 are classified as the "High-Reliability" flow using the duplication mode, and all other packets are classified as the "Non Real-Time (Best Effort)" flow using the splitting mode.
 
 Use the tfc command in step 15 to configure uplink flows. Notice that uplink "Non Real-Time" flow uses the steering mode because the splitting mode is only supported for downlink in this release.  
 
