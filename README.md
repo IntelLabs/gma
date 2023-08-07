@@ -16,7 +16,7 @@ Create two default routes (with different subnets) on GMA client using the two E
 
 Install a 3rd ethernet adapter on GMA server, and configure it as the default route for Internet access
 
-Optionally, setup a 3rd Linux machine to operate as GMA controller. Alternatively, use the same machine for GMA server and GMA controller
+Optionally, setup a 3rd Linux machine to operate as GMA controller, or use the same machine for both GMA server and GMA controller
 
 
 ## Step 1: download "gmaserver" and "gmactrl" source files on GMA server
@@ -38,7 +38,7 @@ Under./MultiAccess_with_Private_5G_Reference_Implementation_1.0.0/MultiAccess_wi
 
 ## Step 2: download "gmaclient" source files on GMA client 
 
-Download both folders ("GMAlib" and "client") in this repo 
+Download both folders ("GMAlib" and "client") from this repo 
 
 ## Step 3: install required libraries and tools on GMA client
 
