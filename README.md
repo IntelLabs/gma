@@ -48,6 +48,8 @@ sudo apt-get install libssl-dev
 
 sudo apt-get install net-tools
 
+sudo apt-get install g++
+
 ## Step 4: install required libraries and tools on GMA server
 
 sudo apt-get install iptables
@@ -67,6 +69,8 @@ sudo apt-get install python3-pip
 sudo pip install websockets
 
 sudo pip install pycryptodomex
+
+sudo apt-get install g++
 
 ## Step 5: build "gmaserver" on GMA server
 cd ./server
