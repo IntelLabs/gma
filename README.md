@@ -243,7 +243,7 @@ Traffic Rate Configuration: txc [clientIndex] [Link] [R] [NRT_R] [Q]
                1: LTE
                R: the maximum (per-client & per-link) tx rate (Mbps)
                NRT_R: the assured maximum tx rate for NRT traffic (NRT_R < R)
-	       Q: the Tx queue length (pkts)
+               Q: the Tx queue length (pkts)
 
 ## Testcases & Examples
 
