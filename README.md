@@ -199,7 +199,7 @@ cd ./ctrl
 
 sudo ./gmactl 
 
-run the following commands to control traffic splitting for a GMA client: 
+run the following command to control traffic splitting for a GMA client: 
 
 Traffic Steering Command: tsc [clientIndex] [RTtsc] [NRTtsc] [NRTk1] [NRTk2] [NRTl]
                
@@ -218,7 +218,9 @@ Traffic Steering Command: tsc [clientIndex] [RTtsc] [NRTtsc] [NRTk1] [NRTk2] [NR
                NRTK2: the LTE burst size, e.g. 16 
                NRTl: the splitting cycle (pkts), e.g. 32
 
-Traffic Flow Configuration (for uplink only): tfc [clientIndex] [flowId] [protoType] [portStart] [portend]  
+run the following command to control uplink traffic classification for a GMA client: 
+
+Traffic Flow Configuration: tfc [clientIndex] [flowId] [protoType] [portStart] [portend]  
                
                clientIndex: the last two bytes of the client IP address
                flowId:
