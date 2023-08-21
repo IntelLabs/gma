@@ -203,17 +203,17 @@ run the following commands to control traffic splitting for a GMA client:
 
 Traffic Steering Command: tsc [clientIndex] [RTtsc] [NRTtsc] [NRTk1] [NRTk2] [NRTl]
                
-	       clientIndex: the last two bytes of the client IP address
+               clientIndex: the last two bytes of the client IP address
                RTtsc: traffic steering command for RT (Real-Time) flow
-               0: default (DL & UL over Wi-Fi for RT flow)
-               1: DL-over-LTE for RT flow
-               2: UL-over-LTE for RT flow
-               3: UL & DL-over-LTE for RT flow
-               4: no update for RT flow
+                 0: default (DL & UL over Wi-Fi for RT flow)
+                 1: DL-over-LTE for RT flow
+                 2: UL-over-LTE for RT flow
+                 3: UL & DL-over-LTE for RT flow
+                 4: no update for RT flow
                NRTtsc: traffic steering command for NRT (Non Real-Time or Best-Effort) flow
-               0: disable dynamic DL splitting for NRT flow
-               1: enable dynamic DL splitting for NRT flow 
-               16: no update for NRT flow
+                 0: disable dynamic DL splitting for NRT flow
+                 1: enable dynamic DL splitting for NRT flow 
+                 16: no update for NRT flow
                NRTk1: the Wi-Fi burst size (pkts), e.g. 16
                NRTK2: the LTE burst size, e.g. 16 
                NRTl: the splitting cycle (pkts), e.g. 32
@@ -222,14 +222,14 @@ Traffic Flow Configuration (for uplink only): tfc [clientIndex] [flowId] [protoT
                
                clientIndex: the last two bytes of the client IP address
                flowId:
-               1: high-reliability (duplication) flow 
-               2: real-time flow
-               3: non real-time flow (default)
+                 1: high-reliability (duplication) flow 
+                 2: real-time flow
+                 3: non real-time flow (default)
                protoType:
-               0: disable UL QoS flow classification (default)
-               1: tcp
-               2: udp
-               3: icmp
+                 0: disable UL QoS flow classification (default)
+                 1: tcp
+                 2: udp
+                 3: icmp
                portStart: the lower bound of (UDP or TCP) destination port (not used if "icmp")
                portEnd: the upper bound of (UDP or TCP) destination port (not used if "icmp")
 
@@ -239,8 +239,8 @@ Traffic Rate Configuration: txc [clientIndex] [Link] [R] [NRT_R] [Q]
 
                clientIndex: the last two bytes of the client IP address
                Link:
-               0: WiFi 
-               1: LTE
+                 0: WiFi 
+                 1: LTE
                R: the maximum (per-client & per-link) tx rate (Mbps)
                NRT_R: the assured maximum tx rate for NRT traffic (NRT_R < R)
                Q: the Tx queue length (pkts)
