@@ -70,6 +70,8 @@ sudo pip install websockets
 
 sudo pip install pycryptodomex
 
+sudo pip install netifaces
+
 sudo apt-get install g++
 
 ## Step 5: build "gmaserver" on GMA server
