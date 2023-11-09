@@ -4,7 +4,7 @@ Generic Multi-Access (GMA) Network Virtualization is a client/server-based softw
 
 ## OS
 
-ubuntu20.04 64bit
+ubuntu22.04 or ubuntu 20.04 64bit
 
 ## HW and Network Configuration (for a simple two-node setup)
 
@@ -21,16 +21,7 @@ Optionally, setup a 3rd Linux machine to operate as GMA controller, or use the s
 
 ## Step 1: download "gmaserver" and "gmactrl" source files on GMA server
 
-Download the installer from https://software.intel.com/iot/edgesoftwarehub/download/home/multi-access-with-private-5g . You would need to create an account if you don't have one. 
-
-Unzip the downloaded file (multi-access-with-private-5g.zip) to a Linux machine with Internet access. 
-
-Go into the folder, and run the following commands:
-
-	sudo chmod +x edgesoftware
-	sudo ./edgesoftware download
-
-Under./MultiAccess_with_Private_5G_Reference_Implementation_1.0.0/MultiAccess_with_Private_5G/GMA/gmaserver/serverapp/, there are three folders to store GMA server source files: 
+Download the following three folders from this repo to the GMA server: 
 
 	./ctrl  (for "gmactrl")
 	./python (for "gmaserver")

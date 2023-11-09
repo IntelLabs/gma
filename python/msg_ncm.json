@@ -1,0 +1,472 @@
+{
+  "MX_System_Update": {
+    "version": "1.0",
+    "message_type": "mx_system_info",
+    "sequence_num": "2",
+    "ncm_connections": [
+      {
+        "connection_id": 3,
+        "connection_type": "lte",
+        "ncm_end_point": {
+          "ip_address": "192.55.66.161",
+          "port": 10021
+        }
+      }
+    ]
+  },
+
+  "MX_Capability_Response": {
+    "version": "1.0",
+    "message_type": "mx_capability_resp",
+    "sequence_num": 3,
+    "aes_key": "8888",
+    "feature_active": [
+      {
+        "feature_name": "downlink_aggregation",
+        "active": true
+      },
+      {
+        "feature_name": "measurement",
+        "active": true
+      }
+    ],
+    "num_anchor_connections": 1,
+    "anchor_connections": [
+      {
+        "connection_id": 4,
+        "connection_type": "vnic"
+      }
+    ],
+    "num_delivery_connections": 4,
+    "delivery_connections": [
+      {
+        "connection_id": 0,
+        "connection_type": "wifi"
+      },
+      {
+        "connection_id": 3,
+        "connection_type": "lte"
+      }
+    ],
+    "convergence_methods": [
+      {
+        "method": "Trailer_Based",
+        "supported": true
+      }
+    ],
+    "adaptation_methods": [
+      {
+        "method": "UDP_without_DTLS",
+        "supported": true
+      }
+    ],
+    "unique_session_id": {
+      "ncm_id": 110,
+      "session_id": 1111
+    }
+  },
+
+  "MX_Reconfiguration_Response": [
+    {
+      "version": "1.0",
+      "message_type": "mx_reconf_rsp",
+      "sequence_num": 6
+    },
+    {
+      "version": "1.0",
+      "message_type": "mx_reconf_rsp",
+      "sequence_num": 7
+    }
+  ],
+
+  "MX_UP_Setup_Configuration_Request": {
+    "version": "1.0",
+    "message_type": "mx_up_setup_conf_req",
+    "sequence_num": 5,
+    "num_anchor_connections": 1,
+    "anchor_connections": [
+      {
+        "connection_id": 4,
+        "connection_type": "vnic",
+        "convergence_method": "Trailer_Based",
+        "num_delivery_connections": 2,
+        "udp_port": 8888,
+        "tcp_port": 10022,
+        "vnic_info": {
+
+          "ip": "10.8.0.2",
+          "gateway": "10.8.0.1",
+          "mask": "255.255.0.0",
+          "dns": "8.8.8.8",
+          "vnic_port": 10022
+        },
+        "allow_application_list": [
+          "com.example.gmasystem",
+          "com.labtest.gmasystem",
+          "com.android.chrome",
+          "org.chromium.chrome",
+          "com.google.android.youtube",
+          "com.google.stadia.android",
+          "com.nextdoordeveloper.miperf.miperf",
+          "us.zoom.videomeetings",
+          "com.skype.raider"
+        ],
+        "client_config": {
+          "network_interface_minMTU": 1400,
+          "dynamic_split_flag": 0,
+          "Lte_always_on_flag": 0,
+          "congest_detect_loss_threshold": 4,
+          "congest_detect_utilization_threshold": 80,
+          "lte_probe_interval_screen_off": 3600,
+          "lte_probe_interval_screen_on": 3600,
+          "lte_probe_interval_active": 300,
+          "lte_rssi_measurement": 0,
+          "wifi_probe_interval_screen_off": 3600,
+          "wifi_probe_interval_screen_on": 3600,
+          "wifi_probe_interval_active": 50,
+          "param_l": 32,
+          "wifi_low_rssi": -85,
+          "wifi_high_rssi": -80,
+          "MRP_interval_active": 60,
+          "MRP_interval_idle": 300,
+          "MRP_size": 40,
+          "max_reordering_delay": 1000,
+          "min_reordering_delay": 100,
+          "reorder_buffer_size": 1000,
+          "reorder_Lsn_enhance_flag": 0,
+          "reorder_drop_out_of_order_pkt": 0,
+          "min_tpt": 10,
+          "idle_timer": 1,
+          "allow_app_list_enable": 1,
+          "wifi_owd_offset": 0,
+          "ul_duplicate_flag": 0,
+          "OWD_CONVERGE_THRESHOLD": 10,
+          "MAX_MEASURE_INTERVAL_NUM": 10,
+          "MIN_PACKET_NUM_PER_INTERVAL": 300,
+          "MAX_MEASURE_INTERVAL_DURATION": 2000,
+          "MIN_MEASURE_INTERVAL_DURATION": 100,
+          "BURST_SAMPLE_FREQUENCY": 3,
+          "MAX_RATE_ESTIMATE": 1000000,
+          "RATE_ESTIMATE_K": 105,
+          "MIN_PACKET_COUNT_PER_BURST": 30,
+          "BURST_INCREASING_ALPHA": 50,
+          "STEP_ALPHA_THRESHOLD": 4,
+          "TOLERANCE_LOSS_BOUND": 2,
+          "TOLERANCE_DELAY_BOUND": 5,
+          "TOLERANCE_DELAY_H": 8,
+          "TOLERANCE_DELAY_L": 4,
+          "SPLIT_ALGORITHM": 2,
+          "INITIAL_PACKETS_BEFORE_LOSS": 1000000000,
+          "icmp_flow_type": 3,
+          "tcp_rt_port_start": 0,
+          "tcp_rt_port_end": 0,
+          "tcp_hr_port_start": 0,
+          "tcp_hr_port_end": 0,
+          "udp_rt_port_start": 0,
+          "udp_rt_port_end": 0,
+          "udp_hr_port_start": 0,
+          "udp_hr_port_end": 0,
+          "ul_qos_flow_enable": 0
+        },
+        "delivery_connections": [
+          {
+            "connection_id": 3,
+            "connection_type": "lte",
+            "adaptation_method": "UDP_without_DTLS ",
+            "adaptation_method_params": {
+              "tunnel_ip_addr": "192.55.66.161",
+              "tunnel_end_port": 10020,
+              "mx_header_optimization": false
+            }
+          },
+          {
+            "connection_id": 0,
+            "connection_type": "wifi",
+            "adaptation_method": "UDP_without_DTLS ",
+            "adaptation_method_params": {
+              "tunnel_ip_addr": "192.55.66.157",
+              "tunnel_end_port": 10021,
+              "mx_header_optimization": false
+            }
+          }
+        ]
+      }
+
+    ]
+  },
+
+
+  "MX_Measurements_Configuration": {
+    "version": "1.0",
+    "message_type": "mx_measurement_conf",
+    "sequence_num": 12,
+    "unique_session_id": {
+      "ncm_id": 110,
+      "session_id": 1111
+    },
+    "measurement_configuration": [
+      {
+        "connection_id": 0,
+        "connection type": "wifi",
+        "meas_rep_conf": [
+          {
+            "meas_rep_param": "WLAN_RSSI",
+            "meas_period": 1000,
+            "meas_threshold": {
+              "high": -10,
+              "low": -15
+            }
+          },
+          {
+            "meas_period": 500,
+            "meas_rep_param": "WLAN_LOAD",
+            "meas_threshold": {
+              "high": -10,
+              "low": -15
+            }
+          },
+          {
+            "meas_period": 500,
+            "meas_rep_param": "EST_UL_TPUT",
+            "meas_threshold": {
+              "high": 100,
+              "low": 30
+            }
+          }
+        ]
+      },
+      {
+        "connection_id": 3,
+        "connection type": "lte",
+        "meas_rep_conf": [
+          {
+            "meas_rep_param": "LTE_RSRP",
+            "meas_period": 1000,
+            "meas_threshold": {
+              "high": -10,
+              "low": -15
+            }
+          },
+          {
+            "meas_period": 500,
+            "meas_rep_param": "LTE_RSRQ",
+            "meas_threshold": {
+              "high": -10,
+              "low": -15
+            }
+          }
+        ]
+      }
+    ]
+  },
+
+  "MX_Session_Resume_Rsp": {
+    "version": "1.0",
+    "message_type": "mx_session_resume_rsp",
+    "sequence_num": 13,
+    "unique_session_id": {
+      "ncm_id": 110,
+      "session_id": 1111
+    }
+  },
+
+  "MX_Test_Ack": {
+    "version": "1.0",
+    "message_type": "test_report_ack"
+  },
+
+  "MX_Session_Suspend_Rsp": {
+    "version": "1.0",
+    "message_type": "mx_session_suspend_rsp",
+    "sequence_num": 14,
+    "unique_session_id": {
+      "ncm_id": 110,
+      "session_id": 1111
+    }
+  },
+
+  "MX_Session_Termination_Rsp": {
+    "version": "1.0",
+    "message_type": "mx_session_termination_resp",
+    "sequence_num": 15,
+    "unique_session_id": {
+      "ncm_id": 110,
+      "session_id": 1111
+    }
+  },
+
+  "MX_GMA_Wifi_List": {
+    "version": "1.0",
+    "message_type": "mx_gma_wifi_list",
+    "sequence_num": 16,
+    "list_type": "black",
+    "wifi_ssid_list": " ",
+    "unique_session_id": {
+      "ncm_id": 110,
+      "session_id": 1111
+    }
+  },
+
+  "MX_Qos_Flow_Conf": {
+    "version": "1.0",
+    "message_type": "mx_qos_flow_conf",
+    "downlink_QoS_flows": {
+      "//": "0: best effort, 1: high reliability; 2: low latency  3: high throughput",
+      "default_flow_id": 3,
+      "number_tcp_flows": 2,
+      "number_udp_flows": 2,
+      "number_icmp_flows": 1,
+      "tcp_flows": [
+        {
+          "flow_id": 2,
+          "remote_addr_mask": "10.0.8.1/24",
+          "remote_port_range": {
+            "start": 100,
+            "end": 65535
+          }
+        },
+        {
+          "flow_id": 1,
+          "remote_addr_mask": "9.9.9.9/24",
+          "remote_port_range": {
+            "start": 100,
+            "end": 65535
+          }
+        }
+      ],
+      "udp_flows": [
+        {
+          "flow_id": 2,
+          "remote_addr_mask": "10.0.8.1/24",
+          "remote_port_range": {
+            "start": 100,
+            "end": 65535
+          }
+        },
+        {
+          "flow_id": 1,
+          "//": "1: icmp",
+          "protocol_type": 1,
+          "remote_addr_mask": "10.0.8.1/24",
+          "remote_port_range": {
+            "start": 100,
+            "end": 65535
+          }
+        }
+      ],
+      "icmp_flows": [
+        {
+          "flow_id": 1,
+          "remote_addr_mask": "10.0.8.1/24"
+        }
+      ]
+    },
+    "uplink_QoS_flows": {
+      "//": "0: best effort, 1: high reliability; 2: low latency  3: high throughput ",
+      "default_flow_id": 0,
+      "number_tcp_flows": 2,
+      "number_udp_flows": 2,
+      "number_icmp_flows": 1,
+      "tcp_flows": [
+        {
+          "flow_id": 2,
+          "remote_addr_mask": "10.0.8.1/24",
+          "remote_port_range": {
+            "start": 100,
+            "end": 65535
+          }
+        },
+        {
+          "flow_id": 1,
+          "remote_addr_mask": "9.9.9.9/24",
+          "remote_port_range": {
+            "start": 100,
+            "end": 65535
+          }
+        }
+      ],
+      "udp_flows": [
+        {
+          "flow_id": 2,
+          "remote_addr_mask": "10.0.8.1/24",
+          "remote_port_range": {
+            "start": 100,
+            "end": 65535
+          }
+        },
+        {
+          "flow_id": 1,
+          "//": "1: icmp",
+          "protocol_type": 1,
+          "remote_addr_mask": "10.0.8.1/24",
+          "remote_port_range": {
+            "start": 100,
+            "end": 65535
+          }
+        }
+      ],
+      "icmp_flows": [
+        {
+          "flow_id": 1,
+          "remote_addr_mask": "10.0.8.1/24"
+        }
+      ]
+    }
+  },
+
+  "MX_Gma_Client_Conf": {
+    "version": "1.0",
+    "message_type": "mx_gma_client_conf",
+    "sequence_num": 18,
+    "wifi_probe_interval": 30,
+    "lte_probe_interval": [
+      {
+        "state": 1,
+        "interval_time": 30
+      },
+      {
+        "state": 2,
+        "interval_time": 30
+      },
+      {
+        "state": 3,
+        "interval_time": 10
+      }
+    ],
+    "lte_reconnect_interval": 60,
+    "low_throughput": 10,
+    "link_disconnect_timer": 10,
+    "wifi_quality_threshold": {
+      "low": -75,
+      "high": -70
+    },
+    "wifi_packet_loss_threshold": {
+      "low": 1,
+      "high": 10
+    },
+    "reordering_parameter": [
+      {
+        "flow": 3,
+        "queue_size": 1000,
+        "timer": 100
+      },
+      {
+        "flow": 1,
+        "queue_size": 100,
+        "timer": 10
+      }
+    ],
+    "measurement_interval": 10,
+    "reporting_interval": 60,
+    "default_flow_id": 3,
+    "control_message_retransmission_limit": 3,
+    "virtual_nic_mtu_size": 1400,
+    "time_stamp_unit": 1000,
+    "sync_guard_time": 2,
+    "unique_session_id": {
+      "ncm_id": 110,
+      "session_id": 1111
+    }
+  }
+
+}
