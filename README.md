@@ -102,7 +102,7 @@ Modify the parameters in confi.ini: "RT_FLOW_DSCP", "HR_FLOW_DSCP" according to 
 
 Downlink packets with DSCP = 2 are classified as the "Real-Time" flow using the steering mode, and those with DSCP = 1 are classified as the "High-Reliability" flow using the duplication mode, and all other packets are classified as the "Non Real-Time (Best Effort)" flow using the splitting mode. For example, the following commands set and unset DSCP to "1" for all downlink UDP flows to 10.8.0.9 respectively: 
 
-        sudo iptables -t mangle -A OUTPUT -d 10.8.0.9 -p udp -j TOS --set-tos 1
+	sudo iptables -t mangle -A OUTPUT -d 10.8.0.9 -p udp -j TOS --set-tos 1
 	sudo iptables -t mangle -D OUTPUT -d 10.8.0.9 -p udp -j TOS --set-tos 1
 
 Set ENABLE_DL_QOS_CONFIG to "1" to enable downlink traffic shapping (optional)
