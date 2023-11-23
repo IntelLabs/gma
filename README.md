@@ -186,6 +186,12 @@ sudo cp ./config.txt /home/gmaclient/
 
 cd ./client
 
+run the followng command to add the default route via Wi-Fi or LTE if it is not present
+
+    sudo ip route add default via 192.168.1.a dev wwan0 metric 7001
+
+    sudo ip route add default via 192.168.0.b dev wlan0 metric 7000
+
 sudo ./gmaclient
 
 ## Step 15: start "gmactrl" on GMA server
