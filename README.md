@@ -199,6 +199,10 @@ sudo ./gmaclient
 
 cd ./ctrl
 
+Modify the parameters in Params_config.txt according to your local environment: 
+
+   SERVER_IP_CONIFG=192.168.3.c
+
 sudo ./gmactl 
 
 run the following command to control traffic splitting for a GMA client: 
