@@ -176,7 +176,7 @@ modify the following parameters in config.txt (under ./client):
 
 	SERVER_DNS=gmaserver.apps.local
 
-(wlan0: network interface for wifi, wwan0: network interface for cellular, gmaserver.apps.local: local DNS name for GMA service running at Edge, a.b.c.d is the (GMA service) IP address at the edge node via LTE)
+(wlan0: network interface for wifi, wwan0: network interface for cellular, gmaserver.apps.local: local DNS name for GMA service running at Edge, a.b.c.d is the IP address (e.g. 192.168.1.a at Step 8) at the GMA server via LTE)
 
 sudo mkdir /home/gmaclient
 
