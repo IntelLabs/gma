@@ -146,7 +146,8 @@ void VirtualWebsockets::virtualWebsocketConnect(ptree message)
             jsonObject = std::regex_replace(jsonObject, reg, "$1");
             k = 0;
             try {
-                v_ws->write(net::buffer(jsonObject));
+                if (v_ws->write(net::buffer(jsonObject)) <= 0)
+                 printf("ws write error\n");
             }
             catch (boost::system::system_error const& e)
             {
@@ -193,11 +194,11 @@ void VirtualWebsockets::RecvNCMM()
     std::string jsonObject;
     beast::flat_buffer buffer;
     std::stringstream ss;
-
     while (true)
     {
 
-        v_ws->read(buffer, ec);
+        if (v_ws->read(buffer, ec) <=0) 
+          printf("ws read error");
        
         if (ec)
         {

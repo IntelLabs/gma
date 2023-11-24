@@ -38,6 +38,11 @@ ReorderingManager::ReorderingManager()
 
 ReorderingWorker::ReorderingWorker()
 {
+	ringBufferInfo = NULL;
+	ringBufferSlotLimitSize = 0;
+	dataOffset = 0;
+	reorderIDHR = 0;
+	reorderIDHR2 = 0;
 }
 
 ReorderingManager::~ReorderingManager()

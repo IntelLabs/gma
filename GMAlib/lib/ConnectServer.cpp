@@ -109,7 +109,8 @@ void ConnectServer::Execute()
 
     try
     {
-        ws.write(net::buffer(jsonObject));
+        if (ws.write(net::buffer(jsonObject)) <= 0)
+         printf("\n ws_write error\n");
      }
     catch (boost::system::system_error const& e)
     {
@@ -348,13 +349,14 @@ void ConnectServer::RecvNCMM()
     std::ostringstream output;
     std::string jsonObject;
     beast::flat_buffer mbuffer;
-
+    
     while (1)
     {
        // try
         {
-            ws_new.read(mbuffer, ec);
-    
+            if (ws_new.read(mbuffer, ec) <=0 )
+             printf("ws read error");
+
             if (ec)
             {
                 std::stringstream ss_closeWs;
@@ -401,7 +403,18 @@ void ConnectServer::RecvNCMM()
                         jsonObject = output.str();
                         std::regex reg2("\\\"([0-9]+|true|false)\\\""); // remove quotes
                         jsonObject = std::regex_replace(jsonObject, reg2, "$1");
-                        ws_new.write(net::buffer(jsonObject));
+                        try {
+                            if (ws_new.write(net::buffer(jsonObject)) <= 0)
+                             printf("\n ws_write error\n");
+                            
+                        }
+                        catch (boost::system::system_error const& e)
+                        {
+                            std::stringstream ss;
+                            ss << e.what() << std::endl;
+                            ss << "ws new write failed\n";
+                            p_systemStateSettings->PrintLogs(ss);
+                        }
                         output.str("");
                         output.clear();
                     }
@@ -474,7 +487,8 @@ void ConnectServer::RecvNCMM()
                     std::regex reg("\\\"([0-9]+|true|false)\\\""); // remove quotes
                     jsonObject = std::regex_replace(jsonObject, reg, "$1");
 
-                    ws_new.write(net::buffer(jsonObject));
+                    if (ws_new.write(net::buffer(jsonObject)) <= 0)
+                    printf("\n ws_write error\n");
 
                     if (SetClientLtePrefs(node))
                     {
@@ -517,7 +531,9 @@ void ConnectServer::RecvInit()
 
     std::string last_msg;
     beast::flat_buffer buffer;
-        ws.read(buffer, ec);
+    if (ws.read(buffer, ec) <=0)
+     printf("ws read error");
+        
         if (ec)
         {
             std::stringstream ss_closeWs;
@@ -610,7 +626,8 @@ void ConnectServer::RecvInit()
                 std::regex reg("\\\"([0-9]+|true|false)\\\""); // remove quotes
                 jsonObject = std::regex_replace(jsonObject, reg, "$1");
                 try {
-                    ws_new.write(net::buffer(jsonObject));
+                    if (ws_new.write(net::buffer(jsonObject)) <= 0)
+                     printf("\n ws_write error\n");
                 }
                 catch (boost::system::system_error const& e)
                 {

@@ -274,6 +274,7 @@ SendWifiProbeMsg::SendWifiProbeMsg()
 {
 	wifiServer.sin_family = {};
 	wifiServer.sin_port = 0;
+	wifiServer.sin_addr = {};
 }
 
 void SendWifiProbeMsg::initUnitSystemStateSettings(SystemStateSettings *p_systemStateSettings)
@@ -788,6 +789,7 @@ SendLteProbeMsg::SendLteProbeMsg()
 {
 	lteServer.sin_family = {};
 	lteServer.sin_port = 0;
+	lteServer.sin_addr = {};
 }
 
 void SendLteProbeMsg::initUnitSystemStateSettings(SystemStateSettings *p_systemStateSettings)
@@ -1175,6 +1177,12 @@ SendMRPMsg::SendMRPMsg()
 	speed = 1000;
 	dl_speed = 1000;
 	time = 10;
+	wifiServer.sin_family = {};
+	wifiServer.sin_port = 0;
+	lteServer.sin_family = {};
+	lteServer.sin_port = 0;
+	lteServer.sin_addr = {};
+	wifiServer.sin_addr = {};
 }
 
 void SendMRPMsg::initUnitSystemStateSettings(SystemStateSettings *p_systemStateSettings)
@@ -1514,7 +1522,9 @@ void SendMRPMsg::Execute()
 				try
 				{
 					//send(wifiudpFd, buf, offset, 0); //JZ: the buf length should be variable depending on "count"
-					sendto(wifiudpFd, (char *)buf, offset, 0, (struct sockaddr *)&wifiServer, sizeof(wifiServer));
+					if (sendto(wifiudpFd, (char *)buf, offset, 0, (struct sockaddr *)&wifiServer, sizeof(wifiServer)) <= 0)
+					 printf("\n sendto error");
+
 					ss.str("");
 					ss << "[MRP END] send over wifi!!!! size: " << (count + 1) << std::endl;
 					p_systemStateSettings->PrintLogs(ss);
@@ -1529,19 +1539,12 @@ void SendMRPMsg::Execute()
 			else if (p_systemStateSettings->gIsLteConnect)
 			{
 				buf[31] = (unsigned char)3; //CID lte
-				try
-				{
-					sendto(lteudpFd, (char *)buf, offset, 0, (struct sockaddr *)&lteServer, sizeof(lteServer));
+			    if (sendto(lteudpFd, (char *)buf, offset, 0, (struct sockaddr *)&lteServer, sizeof(lteServer)) <= 0)
+					  printf("\n setsocketopt error\n");
 					ss.str("");
 					ss << "[MRP END] send over lte!!!! size: " << (count + 1) << std::endl;
 					p_systemStateSettings->PrintLogs(ss);
-				}
-				catch (const std::exception &e)
-				{
-					ss.str("");
-					ss << e.what() << '\n';
-					p_systemStateSettings->PrintLogs(ss);
-				}
+			
 			}
 		}
 	}
@@ -1986,6 +1989,12 @@ SendLRPMsg::SendLRPMsg()
 {
 	isConnect = false;
 	code = '\0';
+	wifiServer.sin_family = {};
+	wifiServer.sin_port = 0;
+	lteServer.sin_family = {};
+	lteServer.sin_port = 0;
+	lteServer.sin_addr = {};
+	wifiServer.sin_addr = {};
 }
 
 void SendLRPMsg::initUnitSystemStateSettings(SystemStateSettings *p_systemStateSettings)
@@ -2038,26 +2047,16 @@ void SendLRPMsg::Execute()
 		if (p_systemStateSettings->gIsWifiConnect)
 		{
 			buf[31] = (unsigned char)0; //CID wifi
-			try
-			{
-				sendto(wifiudpFd, (char *)buf, buf_size, 0, (struct sockaddr *)&wifiServer, sizeof(wifiServer));
-			}
-			catch (const char *e)
-			{
-				std::cout << e << std::endl;
-			}
+			if(sendto(wifiudpFd, (char *)buf, buf_size, 0, (struct sockaddr *)&wifiServer, sizeof(wifiServer)) <=0 )
+				std::cout << "sendto error" << std::endl;
+			
 		}
 		else if (p_systemStateSettings->gIsLteConnect)
 		{
 			buf[31] = (unsigned char)3; //CID lte
-			try
-			{
-				sendto(lteudpFd, (char *)buf, buf_size, 0, (struct sockaddr *)&lteServer, sizeof(lteServer));
-			}
-			catch (const char *e)
-			{
-				std::cout << e << std::endl;
-			}
+			if (sendto(lteudpFd, (char *)buf, buf_size, 0, (struct sockaddr *)&lteServer, sizeof(lteServer)) <=0 )
+				std::cout << "sendto error" << std::endl;
+			
 		}
 	}
 	std::stringstream ss;
@@ -2119,6 +2118,8 @@ SendTSUMsg::SendTSUMsg()
 	wifiServer.sin_port = 0;
 	lteServer.sin_family = {};
 	lteServer.sin_port = 0;
+	lteServer.sin_addr = {};
+	wifiServer.sin_addr = {};
 }
 
 void SendTSUMsg::initUnitSystemStateSettings(SystemStateSettings *p_systemStateSettings)
@@ -2312,11 +2313,7 @@ void SendTSUMsg::trafficSplitingUpdate()
 			p_systemStateSettings->lastSendWifiTsu = (int)(p_systemStateSettings->update_current_time_params() & 0x7FFFFFFF);
 			if (wifiudpFd != GMA_INVALID_SOCKET)
 			{
-				try
-				{
-					sendto(wifiudpFd, (char *)buf, buf_size, 0, (struct sockaddr *)&wifiServer, sizeof(wifiServer));
-				}
-				catch (const char *e)
+				if (sendto(wifiudpFd, (char *)buf, buf_size, 0, (struct sockaddr *)&wifiServer, sizeof(wifiServer)) <= 0)
 				{
 					std::stringstream ss;
 					ss << "[TSU ERROR]: Send over wifi\n";
@@ -2332,11 +2329,7 @@ void SendTSUMsg::trafficSplitingUpdate()
 			p_systemStateSettings->lastSendLteTsu = (int)(p_systemStateSettings->update_current_time_params() & 0x7FFFFFFF);
 			if (lteudpFd != GMA_INVALID_SOCKET)
 			{
-				try
-				{
-					sendto(lteudpFd, (char *)buf, buf_size, 0, (struct sockaddr *)&lteServer, sizeof(lteServer));
-				}
-				catch (const char *e)
+				if (sendto(lteudpFd, (char *)buf, buf_size, 0, (struct sockaddr *)&lteServer, sizeof(lteServer)) <= 0)				
 				{
 					std::stringstream ss;
 					ss << "[TSU ERROR]: Send over lte\n";

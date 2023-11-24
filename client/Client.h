@@ -45,7 +45,7 @@ class ClientManager
 
 public:
     net::io_context ioc;
-    ssl::context ctx{ssl::context::tlsv12_client};
+    ssl::context ctx{ssl::context::tlsv13_client};
     ConnectServer *pConnect = NULL;
 
     char wifiInterface[100];

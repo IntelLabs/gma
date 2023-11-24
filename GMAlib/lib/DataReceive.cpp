@@ -63,7 +63,8 @@ void DataReceive::wakeupSelect()
     {
         char buf[1];
         buf[0] = 'x';
-        sendto(udpLoop, (char *)buf, 1, 0, (struct sockaddr *)&udpAddr, sizeof(udpAddr));
+        if (sendto(udpLoop, (char *)buf, 1, 0, (struct sockaddr *)&udpAddr, sizeof(udpAddr)) <= 0)
+         printf("\n sendto error \n");
     }
 }
 

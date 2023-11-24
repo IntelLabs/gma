@@ -66,7 +66,7 @@ void load_config()
             std::cout << "Load config file error: value=NULL!\n";
             return;
         }
-        if (strcmp(type, "SERVER_NCM_IP") == 0)
+        if (strcmp(type, "SERVER_NCM_IP") == 0 && strlen(value) < 20)
         {
             memcpy(g_systemStateSettings->server_ncm_ip, value, strlen(value));
             g_systemStateSettings->server_ncm_ip[strlen(value)] = '\0';
@@ -75,17 +75,17 @@ void load_config()
         {
             g_systemStateSettings->server_ncm_port = atoi(value);
         }
-        else if (strcmp(type, "WIFI_INTERFACE") == 0)
+        else if (strcmp(type, "WIFI_INTERFACE") == 0 && strlen(value) < 100)
         {
             memcpy(g_systemStateSettings->wifi_interface, value, strlen(value));
             g_systemStateSettings->wifi_interface[strlen(value)] = '\0';
         }
-        else if (strcmp(type, "LTE_INTERFACE") == 0)
+        else if (strcmp(type, "LTE_INTERFACE") == 0 && strlen(value) < 100)
         {
             memcpy(g_systemStateSettings->lte_interface, value, strlen(value));
             g_systemStateSettings->lte_interface[strlen(value)] = '\0';
         }
-        else if (strcmp(type, "SERVER_DNS") == 0)
+        else if (strcmp(type, "SERVER_DNS") == 0 && strlen(value) < 100)
         {
             memcpy(g_systemStateSettings->domain, value, strlen(value));
             g_systemStateSettings->domain[strlen(value)] = '\0';
@@ -464,7 +464,13 @@ int main()
     if (LteCheck(clientManager.lteInterface))
     {
         clientManager.lteNetworkConnected = true;
-        addLteDefaultRoute(clientManager.lteInterface);
+        try {
+            addLteDefaultRoute(clientManager.lteInterface);
+        }
+        catch (std::exception &e) {
+		 std::cout<<"Caught exception: "<<e.what()<<"\n";
+	    }
+
     }
     monitorNetwork.OpenDriverMonitor(g_systemStateSettings->driverMonitorOn);
     if (clientManager.wifiNetworkConnected && clientManager.lteNetworkConnected)
@@ -493,7 +499,16 @@ int main()
 
             monitorNetwork.networkMonitorRunning = false;
             clientManager.Quit();
-            serviceManager.Quit();
+            try {
+                serviceManager.Quit();
+            }
+
+            catch(std::exception const&  e)
+            {
+                std::cout << "std overflow error " <<  e.what() << "\n";
+            }
+
+
             monitorNetwork.CloseDriverMonitor(g_systemStateSettings->driverMonitorOn);
             g_systemStateSettings->LogFileClose();
             break; 

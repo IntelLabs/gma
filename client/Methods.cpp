@@ -479,7 +479,7 @@ void MonitorNetwork::DriverMonitor()
     struct sockaddr_nl src_addr, dest_addr;
     struct nlmsghdr *nlh = NULL;
     struct iovec iov;
-    struct msghdr msg;
+    struct msghdr msg = {0};
     int state;
     int retval;
     int state_smg = 0;
@@ -681,7 +681,7 @@ void MonitorNetwork::monitor()
     local.nl_pid = getpid(); // set out id using current process id
 
     // initialize protocol message header
-    struct msghdr msg;
+    struct msghdr msg = {0};
     {
         msg.msg_name = &local;           // local address
         msg.msg_namelen = sizeof(local); // address size
@@ -721,18 +721,26 @@ void MonitorNetwork::monitor()
                     struct timeval tv;
                     tv.tv_sec = 3600; //3600s rcv timeout
                     tv.tv_usec = 0;
-                    setsockopt(nlfd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof tv);
-                    if (bind(nlfd, (struct sockaddr *)&local, sizeof(local)) < 0)
-                    { // bind socket
+                    if (setsockopt(nlfd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof tv) == 0)
+                    {
+                        if (bind(nlfd, (struct sockaddr *)&local, sizeof(local)) < 0)
+                        { // bind socket failure
+                            g_systemStateSettings->closegmasocket(nlfd);
+                            nlfd = -1;
+                            continue;
+                        }
+                        else
+                        {
+                            k = 0;
+                            break;
+                        }
+                    }
+                    else
+                    {   
                         g_systemStateSettings->closegmasocket(nlfd);
                         nlfd = -1;
                         continue;
-                    }
-                    else
-                    {
-                        k = 0;
-                        break;
-                    }
+                    } 
                 }
             }
             continue;

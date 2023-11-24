@@ -47,6 +47,18 @@ void DataSend::processPackets(char *buffer, int length)
     }
     int dst_port = 0;
     int flow_id = p_systemStateSettings->nonRealtimelModeFlowId;
+   
+    //add per-packet ToS marking
+	current_pkt_tos = ipHeader.getTos();
+    if (current_pkt_tos!= last_pkt_tos)
+	{
+			last_pkt_tos = current_pkt_tos;
+			if(setsockopt(wifiudp_fd, IPPROTO_IP, IP_TOS, &last_pkt_tos, sizeof(last_pkt_tos)) == -1)
+             printf("\n setsocketopt error\n");
+            if (setsockopt(lteudp_fd, IPPROTO_IP, IP_TOS, &last_pkt_tos, sizeof(last_pkt_tos)) == -1)
+             printf("\n setsocketopt error\n");
+	}
+	///////////////////////////		
     
     if (p_systemStateSettings->ulQoSFlowEnable == 1)
         {
@@ -165,11 +177,13 @@ void DataSend::processPackets(char *buffer, int length)
 void DataSend::updataWifiChannel(GMASocket wifiFd)
 {
     wifiudp_fd = wifiFd;
+    last_pkt_tos = 0;
 }
 
 void DataSend::updataLteChannel(GMASocket lteFd)
 {
     lteudp_fd = lteFd;
+    last_pkt_tos = 0;
 }
 
 void DataSend::sendPacketToServer(char *data, int offset, int length)
@@ -178,16 +192,20 @@ void DataSend::sendPacketToServer(char *data, int offset, int length)
     {
         if (wifiudp_fd != GMA_INVALID_SOCKET )
         {
-            sendto(wifiudp_fd, data + offset, length, 0, (struct sockaddr *)&wifiServer, sizeof(wifiServer));
+            if(sendto(wifiudp_fd, data + offset, length, 0, (struct sockaddr *)&wifiServer, sizeof(wifiServer)) > 0)
             p_systemStateSettings->wifiSendBytes += length;
+            else
+            printf("\nsendto error\n");
         }
     }
     else // all DL traffic over LTE, uplink traffic also over LTE
     {
         if (lteudp_fd != GMA_INVALID_SOCKET )
         {
-            sendto(lteudp_fd, data + offset, length, 0, (struct sockaddr *)&lteServer, sizeof(lteServer));
+            if (sendto(lteudp_fd, data + offset, length, 0, (struct sockaddr *)&lteServer, sizeof(lteServer)) > 0)
             p_systemStateSettings->lteSendBytes += length;
+            else
+            printf("\nsendto error\n");
         }
     }
 }
@@ -197,32 +215,41 @@ void DataSend::sendHRPacketToServer(char *data, int offset, int length)
 
     if (wifiudp_fd != GMA_INVALID_SOCKET && p_systemStateSettings->gIsWifiConnect)
     {
-        sendto(wifiudp_fd, data + offset, length, 0, (struct sockaddr *)&wifiServer, sizeof(wifiServer));
-        p_systemStateSettings->wifiSendBytes += length;
+        if (sendto(wifiudp_fd, data + offset, length, 0, (struct sockaddr *)&wifiServer, sizeof(wifiServer)) > 0)
+            p_systemStateSettings->wifiSendBytes += length;
+        else
+            printf("\nsendto error\n");
     }
     if (lteudp_fd != GMA_INVALID_SOCKET && p_systemStateSettings->gIsLteConnect)
     {
-        sendto(lteudp_fd, data + offset, length, 0, (struct sockaddr *)&lteServer, sizeof(lteServer));
-        p_systemStateSettings->lteSendBytes += length;
+        if (sendto(lteudp_fd, data + offset, length, 0, (struct sockaddr *)&lteServer, sizeof(lteServer)) > 0)
+            p_systemStateSettings->lteSendBytes += length;
+        else
+            printf("\nsendto error\n");
     }
 }
 
 void DataSend::sendRTPacketToServer(char *data, int offset, int length)
 {
+
     if (p_systemStateSettings->gDLAllOverLte == false && p_systemStateSettings->gUlRToverLteFlag == 0)
     {
         if (wifiudp_fd != GMA_INVALID_SOCKET)
         {
-            sendto(wifiudp_fd, data + offset, length, 0, (struct sockaddr *)&wifiServer, sizeof(wifiServer));
+            if (sendto(wifiudp_fd, data + offset, length, 0, (struct sockaddr *)&wifiServer, sizeof(wifiServer)) > 0)
             p_systemStateSettings->wifiSendBytes += length;
+            else
+            printf("\nsendto error\n");
         }
     }
     else // all DL traffic over LTE, uplink traffic also over LTE
     {
         if (lteudp_fd != GMA_INVALID_SOCKET)
         {
-            sendto(lteudp_fd, data + offset, length, 0, (struct sockaddr *)&lteServer, sizeof(lteServer));
+            if (sendto(lteudp_fd, data + offset, length, 0, (struct sockaddr *)&lteServer, sizeof(lteServer)) > 0)
             p_systemStateSettings->lteSendBytes += length;
+            else
+            printf("\nsendto error\n");
         }
     }
 }

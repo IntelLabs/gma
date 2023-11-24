@@ -375,7 +375,8 @@ bool TcpReceive::StartRecvMsg()
             wakeUpOn = true;
             char buf[1];
             buf[0] = 'x';
-            sendto(udp, (char*)buf, 1, 0, (struct sockaddr*)&udpAddr, sizeof(udpAddr));
+            if (sendto(udp, (char*)buf, 1, 0, (struct sockaddr*)&udpAddr, sizeof(udpAddr)) <= 0)
+             printf("\n sendto error \n");
             return false;
         }
         else
@@ -406,7 +407,8 @@ void TcpReceive::WakeupTcpSocketChannel()
         wakeUpOn = true;
         char buf[10];
         buf[0] = 'x';
-        sendto(udp, (char*)buf, 10, 0, (struct sockaddr*)&udpAddr, sizeof(udpAddr));
+        if (sendto(udp, (char*)buf, 10, 0, (struct sockaddr*)&udpAddr, sizeof(udpAddr)) <= 0)
+        printf("\n sendto error \n");
     }
 }
 

@@ -39,10 +39,8 @@ int restart_cnt = 0;
 ServiceManager::ServiceManager()
 {
     isServiceRunning = false;
-    wifiServer.sin_family = {};
-    wifiServer.sin_port = 0;
-    lteServer.sin_family = {};
-    lteServer.sin_port = 0;
+    wifiServer = {0};
+    lteServer = {0};
     communicateForeground = 0;
     dataReceiveID = 0;
     rssiReceiverID = 0;
@@ -51,9 +49,10 @@ ServiceManager::ServiceManager()
     wifiChannel = GMA_INVALID_SOCKET;
     lteChannel = GMA_INVALID_SOCKET;
     udploopFd = GMA_INVALID_SOCKET;
-    udpInaddr.sin_family = {};
-    udpInaddr.sin_port = 0;
-    udpAddr.sa_family = {};
+    //udpInaddr.sin_family = {};
+    //udpInaddr.sin_port = 0;
+    udpAddr = {0};
+    udpInaddr = {0};
 }
 
 void ServiceManager::initUnitSystemStateSettings(SystemStateSettings *p_systemStateSettings)
@@ -222,7 +221,7 @@ void ServiceManager::handler(int signal)
                 g_systemStateSettings->PrintLogs(ss);
 
                 net::io_context ioc;
-                ssl::context ctx{ssl::context::tlsv12_client};
+                ssl::context ctx{ssl::context::tlsv13_client};
                 load_root_certificates(ctx);
                 virtualWss.updateSettings(ioc, ctx);
                 int count = 0;
@@ -255,7 +254,7 @@ void ServiceManager::handler(int signal)
     case sig_resume: //2
     {
         net::io_context ioc;
-        ssl::context ctx{ssl::context::tlsv12_client};
+        ssl::context ctx{ssl::context::tlsv13_client};
         load_root_certificates(ctx);
         while (virtualWss.connectServerRunning)
         {
@@ -578,7 +577,8 @@ void ServiceManager::wakeupSelect()
     {
         char buf[1];
         buf[0] = 'x';
-        sendto(udploopFd, (char*)buf, 1, 0, (struct sockaddr*)&udpAddr, sizeof(udpAddr));
+        if (sendto(udploopFd, (char*)buf, 1, 0, (struct sockaddr*)&udpAddr, sizeof(udpAddr)) == -1)
+         std::cout << "error" << "\n";
     }
 }
 
@@ -850,8 +850,8 @@ void ServiceManager::initClient()
 
 void ServiceManager::setParameters()
 {
-    struct sockaddr_in mwifiServer;
-    struct sockaddr_in mlteServer;
+    struct sockaddr_in mwifiServer = {0};
+    struct sockaddr_in mlteServer = {0};
     mwifiServer.sin_addr.s_addr = inet_addr(g_systemStateSettings->serverWifiTunnelIp.c_str());
     mwifiServer.sin_family = AF_INET;
     mwifiServer.sin_port = htons(g_systemStateSettings->serverWifiTunnelPort);

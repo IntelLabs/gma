@@ -37,9 +37,12 @@ public:
     DataSend();
     
 private:
+    unsigned char current_pkt_tos = 0;
+    unsigned char last_pkt_tos = 0;
     void sendPacketToServer(char* data, int offset, int length);
     void sendHRPacketToServer(char* data, int offset, int length);
     void sendRTPacketToServer(char* data, int offset, int length);
+
     
 
 };

@@ -16,11 +16,11 @@ import os
 import netifaces as ni
 
 ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+ctx.minimum_version = ssl.TLSVersion.TLSv1_3
 ctx.maximum_version = ssl.TLSVersion.TLSv1_3
 
 #ctx.set_ciphers("AES256-SHA")
-ctx.set_ciphers("AES256-GCM-SHA384")
+#ctx.set_ciphers("TLS_AES_256_GCM_SHA384")
 #ctx.load_verify_locations("server.crt")
 #ctx.check_hostname = False
 certfile = "server.crt"
