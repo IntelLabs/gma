@@ -1442,25 +1442,34 @@ void SendMRPMsg::Execute()
 			*/
 			
 			if (p_systemStateSettings->wifiPacketNum == 0)
-				p_systemStateSettings->wifiOwdMax;
+				p_systemStateSettings->wifiOwdMax = 0;
 			if (p_systemStateSettings->ltePacketNum == 0)
 				p_systemStateSettings->lteOwdMax = 0;
 			if (p_systemStateSettings->wifiRtPacketNum == 0)
-				p_systemStateSettings->wifiRtOwdMax;
+				p_systemStateSettings->wifiRtOwdMax = 0;
 			if (p_systemStateSettings->lteRtPacketNum == 0)
 				p_systemStateSettings->lteRtOwdMax = 0;
 
 			if (p_systemStateSettings->lteOwdMax > p_systemStateSettings->wifiOwdMax)
-				p_systemStateSettings->maxReorderingDelay = p_systemStateSettings->lteOwdMax + p_systemStateSettings->MIN_MAXREORDERINGDELAY;
+				p_systemStateSettings->maxReorderingDelay = p_systemStateSettings->lteOwdMax - p_systemStateSettings->wifiOwdMin;
 			else
-				p_systemStateSettings->maxReorderingDelay = p_systemStateSettings->wifiOwdMax + p_systemStateSettings->MIN_MAXREORDERINGDELAY;
+				p_systemStateSettings->maxReorderingDelay = p_systemStateSettings->wifiOwdMax - p_systemStateSettings->lteOwdMin;
 
 			if (p_systemStateSettings->lteRtOwdMax > p_systemStateSettings->wifiRtOwdMax)
-				p_systemStateSettings->HRreorderingTimeout = p_systemStateSettings->lteRtOwdMax + p_systemStateSettings->MIN_MAXREORDERINGDELAY;
+				p_systemStateSettings->HRreorderingTimeout = p_systemStateSettings->lteRtOwdMax - p_systemStateSettings->wifiRtOwdMin;
 			else
-				p_systemStateSettings->HRreorderingTimeout = p_systemStateSettings->wifiRtOwdMax + p_systemStateSettings->MIN_MAXREORDERINGDELAY;
+				p_systemStateSettings->HRreorderingTimeout = p_systemStateSettings->wifiRtOwdMax - p_systemStateSettings->lteRtOwdMin;
 
 
+			if (p_systemStateSettings->maxReorderingDelay < p_systemStateSettings->MIN_MAXREORDERINGDELAY)
+			  p_systemStateSettings->maxReorderingDelay = p_systemStateSettings->MIN_MAXREORDERINGDELAY;
+			else if (p_systemStateSettings->maxReorderingDelay > p_systemStateSettings->MAX_MAXREORDERINGDELAY)
+			  p_systemStateSettings->maxReorderingDelay = p_systemStateSettings->MAX_MAXREORDERINGDELAY;
+			
+			if (p_systemStateSettings->HRreorderingTimeout < p_systemStateSettings->MIN_MAXREORDERINGDELAY)
+			  p_systemStateSettings->HRreorderingTimeout = p_systemStateSettings->MIN_MAXREORDERINGDELAY;
+			else if (p_systemStateSettings->HRreorderingTimeout > p_systemStateSettings->MAX_MAXREORDERINGDELAY)
+			  p_systemStateSettings->HRreorderingTimeout = p_systemStateSettings->MAX_MAXREORDERINGDELAY;
 			
 			p_systemStateSettings->GMAIPCMessage(16, p_systemStateSettings->HRreorderingTimeout, p_systemStateSettings->maxReorderingDelay, false, 0); //update reordering timer
 
