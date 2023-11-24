@@ -4,7 +4,7 @@ Generic Multi-Access (GMA) Network Virtualization is a client/server-based softw
 
 ## OS
 
-ubuntu22.04 or ubuntu 20.04 64bit
+ubuntu 22.04 64bit
 
 ## HW and Network Configuration (for a simple two-node setup)
 
@@ -100,7 +100,10 @@ Modify the parameters in confi.ini: "RT_FLOW_DSCP", "HR_FLOW_DSCP" according to 
 	RT_FLOW_DSCP = 2
 	HR_FLOW_DSCP = 1
 
-Downlink packets with DSCP = 2 are classified as the "Real-Time" flow using the steering mode, and those with DSCP = 1 are classified as the "High-Reliability" flow using the duplication mode, and all other packets are classified as the "Non Real-Time (Best Effort)" flow using the splitting mode.
+Downlink packets with DSCP = 2 are classified as the "Real-Time" flow using the steering mode, and those with DSCP = 1 are classified as the "High-Reliability" flow using the duplication mode, and all other packets are classified as the "Non Real-Time (Best Effort)" flow using the splitting mode. For example, the following commands set and unset DSCP to "1" for all downlink UDP flows to 10.8.0.9 respectively: 
+
+	sudo iptables -t mangle -A OUTPUT -d 10.8.0.9 -p udp -j TOS --set-tos 1
+	sudo iptables -t mangle -D OUTPUT -d 10.8.0.9 -p udp -j TOS --set-tos 1
 
 Set ENABLE_DL_QOS_CONFIG to "1" to enable downlink traffic shapping (optional)
 
@@ -173,7 +176,7 @@ modify the following parameters in config.txt (under ./client):
 
 	SERVER_DNS=gmaserver.apps.local
 
-(wlan0: network interface for wifi, wwan0: network interface for cellular, gmaserver.apps.local: local DNS name for GMA service running at Edge, a.b.c.d is the (GMA service) IP address at the edge node via LTE)
+(wlan0: network interface for wifi, wwan0: network interface for cellular, gmaserver.apps.local: local DNS name for GMA service running at Edge, a.b.c.d is the IP address (e.g. 192.168.1.a at Step 8) at the GMA server via LTE)
 
 sudo mkdir /home/gmaclient
 
@@ -183,12 +186,22 @@ sudo cp ./config.txt /home/gmaclient/
 
 cd ./client
 
+run the followng command to add the default route via Wi-Fi or LTE if it is not present
+
+    sudo ip route add default via 192.168.1.a dev wwan0 metric 7001
+
+    sudo ip route add default via 192.168.0.b dev wlan0 metric 7000
+
 sudo ./gmaclient
 
 ## Step 15: start "gmactrl" on GMA server
 
 
 cd ./ctrl
+
+Modify the parameters in Params_config.txt according to your local environment: 
+
+     SERVER_IP_CONIFG=192.168.3.c
 
 sudo ./gmactl 
 
