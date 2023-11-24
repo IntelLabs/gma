@@ -4,7 +4,7 @@ Generic Multi-Access (GMA) Network Virtualization is a client/server-based softw
 
 ## OS
 
-ubuntu22.04 or ubuntu 20.04 64bit
+ubuntu 22.04 64bit
 
 ## HW and Network Configuration (for a simple two-node setup)
 
