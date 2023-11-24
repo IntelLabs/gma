@@ -1723,17 +1723,22 @@ int SendMRPMsg::BuildMeasureReportElement(unsigned char *buf, int offset)
 			buf[offset + rtOffset + 24] = (unsigned char)((p_systemStateSettings->lteOwdMax - p_systemStateSettings->lteOwdMin) & 0x0000007F); //lte OWD range(ms)
 		}
 
-		//(NRT4) ave owd diff wifi- lte
+		if (p_systemStateSettings->wifiOwdMin != INT_MAX && p_systemStateSettings->lteOwdMin != INT_MAX)
+		    p_systemStateSettings->wifiOwdOffset = p_systemStateSettings->wifiOwdMin - p_systemStateSettings->lteOwdMin;
+		else
+		    p_systemStateSettings->wifiOwdOffset = 0;
+	
+
+	    //(NRT4) ave owd diff wifi- lte
 		if (p_systemStateSettings->wifiPacketNum < p_systemStateSettings->minPktsample || p_systemStateSettings->ltePacketNum < p_systemStateSettings->minPktsample)
 		{
 			buf[offset + rtOffset + 25] = (unsigned char)0; //average OWD difference
-			p_systemStateSettings->wifiOwdOffset = 0;
+		//	p_systemStateSettings->wifiOwdOffset = 0;
 			buf[offset + rtOffset + 32] = 0;
 		}
 		else
 		{
 			buf[offset + rtOffset + 25] = (unsigned char)(p_systemStateSettings->wifiOwdSum / p_systemStateSettings->wifiPacketNum - p_systemStateSettings->lteOwdSum / p_systemStateSettings->ltePacketNum); //average OWD difference
-			p_systemStateSettings->wifiOwdOffset = p_systemStateSettings->wifiOwdMin - p_systemStateSettings->lteOwdMin;
 			//we only use NRT traffic to set the wifi offset!
 			if (p_systemStateSettings->flowOwdPacketNum < p_systemStateSettings->minPktsample)
 				buf[offset + rtOffset + 32] = 0;

@@ -260,13 +260,16 @@ void ClientManager::getServerIp(char servername[])
         std::stringstream ss;
         ss << "Finding DNS: " << domainName << std::endl;
         g_systemStateSettings->PrintLogs(ss);
-
-        struct hostent* host_info = gethostbyname(domainName.c_str());
-        int xx = 0;
-        while (!host_info && xx < 3)
+        struct hostent* host_info = NULL;
+        if (strcmp(servername, "gma.com")!=0)
         {
             host_info = gethostbyname(domainName.c_str());
-            xx++;
+            int xx = 0;
+            while (!host_info && xx < 3)
+            {
+                host_info = gethostbyname(domainName.c_str());
+                xx++;
+            }
         }
         
         if (host_info == NULL)
