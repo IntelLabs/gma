@@ -1451,14 +1451,14 @@ void SendMRPMsg::Execute()
 				p_systemStateSettings->lteRtOwdMax = 0;
 
 			if (p_systemStateSettings->lteOwdMax > p_systemStateSettings->wifiOwdMax)
-				p_systemStateSettings->maxReorderingDelay = p_systemStateSettings->lteOwdMax - p_systemStateSettings->wifiOwdMin;
+				p_systemStateSettings->maxReorderingDelay = p_systemStateSettings->lteOwdMax - p_systemStateSettings->wifiOwdMin + 20;
 			else
-				p_systemStateSettings->maxReorderingDelay = p_systemStateSettings->wifiOwdMax - p_systemStateSettings->lteOwdMin;
+				p_systemStateSettings->maxReorderingDelay = p_systemStateSettings->wifiOwdMax - p_systemStateSettings->lteOwdMin + 20;
 
 			if (p_systemStateSettings->lteRtOwdMax > p_systemStateSettings->wifiRtOwdMax)
-				p_systemStateSettings->HRreorderingTimeout = p_systemStateSettings->lteRtOwdMax - p_systemStateSettings->wifiRtOwdMin;
+				p_systemStateSettings->HRreorderingTimeout = p_systemStateSettings->lteRtOwdMax - p_systemStateSettings->wifiRtOwdMin  + 20 ;
 			else
-				p_systemStateSettings->HRreorderingTimeout = p_systemStateSettings->wifiRtOwdMax - p_systemStateSettings->lteRtOwdMin;
+				p_systemStateSettings->HRreorderingTimeout = p_systemStateSettings->wifiRtOwdMax - p_systemStateSettings->lteRtOwdMin  + 20;
 
 
 			if (p_systemStateSettings->maxReorderingDelay < p_systemStateSettings->MIN_MAXREORDERINGDELAY)
