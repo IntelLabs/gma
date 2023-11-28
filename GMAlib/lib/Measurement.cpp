@@ -177,7 +177,7 @@ bool TrafficSplitting::delayBasedAlgorithm(int wifiOwd, int lteOwd)
 {
 	int lastWifiIndex = p_systemStateSettings->wifiSplitFactor;
 	bool update = false;
-	if (p_systemStateSettings->TOLERANCE_DELAY_H < wifiOwd - lteOwd)
+	if (p_systemStateSettings->TOLERANCE_DELAY_BOUND < wifiOwd - lteOwd)
 	{
 		if (p_systemStateSettings->wifiIndexChangeAlpha >= 0)
 		{
@@ -191,7 +191,7 @@ bool TrafficSplitting::delayBasedAlgorithm(int wifiOwd, int lteOwd)
 			update = true;
 		}
 	}
-	else if (wifiOwd - lteOwd < p_systemStateSettings->TOLERANCE_DELAY_L)
+	else if (p_systemStateSettings->TOLERANCE_DELAY_BOUND < lteOwd - wifiOwd)
 	{
 		if (p_systemStateSettings->wifiIndexChangeAlpha <= 0)
 		{
