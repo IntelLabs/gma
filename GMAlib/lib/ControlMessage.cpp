@@ -1450,15 +1450,21 @@ void SendMRPMsg::Execute()
 			if (p_systemStateSettings->lteRtPacketNum == 0)
 				p_systemStateSettings->lteRtOwdMax = 0;
 
-			if (p_systemStateSettings->lteOwdMax > p_systemStateSettings->wifiOwdMax)
-				p_systemStateSettings->maxReorderingDelay = p_systemStateSettings->lteOwdMax - p_systemStateSettings->wifiOwdMin + 20;
+			int owd_diff_lte_to_wifi = p_systemStateSettings->lteOwdMax - p_systemStateSettings->wifiOwdMin;
+			int owd_diff_wifi_to_lte = p_systemStateSettings->wifiOwdMax - p_systemStateSettings->lteOwdMin;
+			if (owd_diff_lte_to_wifi > owd_diff_wifi_to_lte)
+				p_systemStateSettings->maxReorderingDelay = owd_diff_lte_to_wifi + 20;
 			else
-				p_systemStateSettings->maxReorderingDelay = p_systemStateSettings->wifiOwdMax - p_systemStateSettings->lteOwdMin + 20;
+				p_systemStateSettings->maxReorderingDelay = owd_diff_wifi_to_lte + 20;
 
-			if (p_systemStateSettings->lteRtOwdMax > p_systemStateSettings->wifiRtOwdMax)
-				p_systemStateSettings->HRreorderingTimeout = p_systemStateSettings->lteRtOwdMax - p_systemStateSettings->wifiRtOwdMin  + 20 ;
+
+			owd_diff_lte_to_wifi = p_systemStateSettings->lteRtOwdMax - p_systemStateSettings->wifiRtOwdMin;
+			owd_diff_wifi_to_lte = p_systemStateSettings->wifiRtOwdMax - p_systemStateSettings->lteRtOwdMin;
+
+			if (owd_diff_lte_to_wifi > owd_diff_wifi_to_lte)
+				p_systemStateSettings->HRreorderingTimeout = owd_diff_lte_to_wifi  + 20 ;
 			else
-				p_systemStateSettings->HRreorderingTimeout = p_systemStateSettings->wifiRtOwdMax - p_systemStateSettings->lteRtOwdMin  + 20;
+				p_systemStateSettings->HRreorderingTimeout = owd_diff_wifi_to_lte  + 20;
 
 
 			if (p_systemStateSettings->maxReorderingDelay < p_systemStateSettings->MIN_MAXREORDERINGDELAY)
