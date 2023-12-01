@@ -243,15 +243,15 @@ Traffic Flow Configuration: tfc [clientIndex] [flowId] [protoType] [portStart] [
 
 run the following command to control (downlink) traffic shaping for a GMA client: 
 
-Traffic Rate Configuration: txc [clientIndex] [Link] [R] [NRT_R] [Q]
+Traffic Rate Configuration: txc [clientIndex] [Link] [R] [Q] [Delay]
 
                clientIndex: the last two bytes of the client IP address
                Link:
                  0: WiFi 
                  1: LTE
                R: the maximum (per-client & per-link) tx rate (Mbps)
-               NRT_R: the assured maximum tx rate for NRT traffic (NRT_R < R)
-               Q: the Tx queue length (pkts)
+               Q: the Tx queue length (pkts) for real-time (RT) flow
+               Delay: the one-way delay (ms) added to downlink NRT flow
 
 ## Testcases & Examples
 
