@@ -109,7 +109,7 @@ Set ENABLE_DL_QOS_CONFIG to "1" to enable downlink traffic shapping (optional)
 
 Use the tfc command in step 15 to configure uplink flows. Notice that uplink "Non Real-Time" flow uses the steering mode because the splitting mode is only supported for downlink in this release.  
 
-![GMA Testbed](https://github.com/IntelLabs/gma/blob/master/GMA-testbed.png)
+![GMA Testbed](https://github.com/IntelLabs/gma/blob/development/GMA-testbed.png)
 
 ## Step 9: create a new SSL certificate on GMA server
 
