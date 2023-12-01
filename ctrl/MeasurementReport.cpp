@@ -459,9 +459,9 @@ bool send_txc_message_to_server(char* buf)
 		int max_rate = std::stoi(tokens[3]);
 		int nrt_rate = std::stoi(tokens[4]);
 		int max_delay = std::stoi(tokens[5]);
-		if (max_rate <= nrt_rate)
+		if (max_rate <=0 || nrt_rate <=0 || max_delay <0)
 		{
-			printf("Wrong rate configuration\n");
+			printf("Wrong configuration\n");
 			return false;
 		}
 		txcmsg->client_index = idNum;
@@ -1342,7 +1342,7 @@ int main(int argc, char* argv[])
 		else if (!strncmp(buff, "txc", strlen("txc")))
 		{
 			if (!send_txc_message_to_server(buff))
-				printf("Wrong format, e.g., [txc clientIndex linkId maxRate nrtRate maxDelay]\n");
+				printf("Wrong format, e.g., [txc clientIndex linkId maxRate(Mbit/s) rtQueueLimit(pkts) nrtDelay(ms)]\n");
 			else
 				printf("send txc req\n");
 		}

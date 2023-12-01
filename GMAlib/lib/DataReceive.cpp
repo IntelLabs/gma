@@ -128,19 +128,20 @@ void DataReceive::listenSockets()
 
 void DataReceive::receiveWifiControl(char *packet)
 {
-    vnicAck.init((unsigned char *)packet, dataOffset + p_systemStateSettings->sizeofGMAMessageHeader);
+    vnicAck.init((unsigned char *)packet, dataOffset + p_systemStateSettings->sizeofDlGMAMessageHeader);
     int seqNumber = -1;
+
     switch (vnicAck.getType())
     {
     case 0x000000FF:
     {
-        reqMessage.init((unsigned char *)packet, dataOffset + p_systemStateSettings->sizeofGMAMessageHeader);
+        reqMessage.init((unsigned char *)packet, dataOffset + p_systemStateSettings->sizeofDlGMAMessageHeader);
         if (reqMessage.getSubType() == 4)
         {
             //controlManager.SendACK(4);
             p_systemStateSettings->GMAIPCMessage(8, 0, 0, false, 4);
             
-            tscMessage.init((unsigned char *)packet, dataOffset + p_systemStateSettings->sizeofGMAMessageHeader);
+            tscMessage.init((unsigned char *)packet, dataOffset + p_systemStateSettings->sizeofDlGMAMessageHeader);
             switch (tscMessage.getULDuplicationEnabled())
             {
             case 0:
@@ -188,7 +189,7 @@ void DataReceive::receiveWifiControl(char *packet)
             //controlManager.SendACK(5);
             p_systemStateSettings->GMAIPCMessage(8, 0, 0, false, 5);
 
-            int offset = dataOffset + p_systemStateSettings->sizeofGMAMessageHeader + 6; //what is this 6 bytes?
+            int offset = dataOffset + p_systemStateSettings->sizeofDlGMAMessageHeader + 6; //what is this 6 bytes?
             p_systemStateSettings->gNetWorkInterfaceMinMTU = ((unsigned int)(packet[offset + 3]) << 24 | (unsigned int)(packet[offset + 2]) << 16 | (unsigned int)(packet[offset + 1]) << 8 | (unsigned int)(packet[offset + 0]));
             p_systemStateSettings->gDynamicSplitFlag = ((unsigned int)(packet[offset + 7]) << 24 | (unsigned int)(packet[offset + 6]) << 16 | (unsigned int)(packet[offset + 5]) << 8 | (unsigned int)(packet[offset + 4]));
             p_systemStateSettings->gLteAlwaysOnFlag = ((unsigned int)(packet[offset + 11]) << 24 | (unsigned int)(packet[offset + 10]) << 16 | (unsigned int)(packet[offset + 9]) << 8 | (unsigned int)(packet[offset + 8]));
@@ -260,7 +261,7 @@ void DataReceive::receiveWifiControl(char *packet)
             p_systemStateSettings->GMAIPCMessage(8, 0, 0, false, 6);
 
 
-            tfcMessage.init((unsigned char *)packet, dataOffset + p_systemStateSettings->sizeofGMAMessageHeader);
+            tfcMessage.init((unsigned char *)packet, dataOffset + p_systemStateSettings->sizeofDlGMAMessageHeader);
             switch (tfcMessage.getProtoType())
             {
             case 0: //disable UL QoS flow
@@ -364,7 +365,7 @@ void DataReceive::receiveWifiControl(char *packet)
         seqNumber = vnicAck.getAckNum();
         p_systemStateSettings->GMAIPCMessage(4, seqNumber, p_systemStateSettings->currentSysTimeMs, false, 0); //controlManager.receiveWifiTSA(seqNumber, p_systemStateSettings->currentSysTimeMs);
         
-        vnicTSA.init((unsigned char *)packet, dataOffset + p_systemStateSettings->sizeofGMAMessageHeader); //GMA header + ip header + udp header
+        vnicTSA.init((unsigned char *)packet, dataOffset + p_systemStateSettings->sizeofDlGMAMessageHeader); //GMA header + ip header + udp header
 
         if (!measurementManager.measurementOn)
             {
@@ -388,19 +389,19 @@ void DataReceive::receiveWifiControl(char *packet)
 
 void DataReceive::receiveLteControl(char *packet)
 {
-    vnicAck.init((unsigned char *)packet, dataOffset + p_systemStateSettings->sizeofGMAMessageHeader);
+    vnicAck.init((unsigned char *)packet, dataOffset + p_systemStateSettings->sizeofDlGMAMessageHeader);
     int seqNumber = vnicAck.getAckNum();
     switch (vnicAck.getType())
     {
     case 0x000000FF:
     {
-        reqMessage.init((unsigned char*)packet, dataOffset + p_systemStateSettings->sizeofGMAMessageHeader);
+        reqMessage.init((unsigned char*)packet, dataOffset + p_systemStateSettings->sizeofDlGMAMessageHeader);
         if (reqMessage.getSubType() == 4)
         {
             //controlManager.SendACK(4);
             p_systemStateSettings->GMAIPCMessage(8, 0, 0, false, 4);
 
-            tscMessage.init((unsigned char*)packet, dataOffset + p_systemStateSettings->sizeofGMAMessageHeader);
+            tscMessage.init((unsigned char*)packet, dataOffset + p_systemStateSettings->sizeofDlGMAMessageHeader);
             switch (tscMessage.getULDuplicationEnabled())
             {
             case 0:
@@ -448,7 +449,7 @@ void DataReceive::receiveLteControl(char *packet)
             //controlManager.SendACK(5);
             p_systemStateSettings->GMAIPCMessage(8, 0, 0, false, 5);
 
-            int offset = dataOffset + p_systemStateSettings->sizeofGMAMessageHeader + 6; //what is this 6 bytes?
+            int offset = dataOffset + p_systemStateSettings->sizeofDlGMAMessageHeader + 6; //what is this 6 bytes?
             p_systemStateSettings->gNetWorkInterfaceMinMTU = ((unsigned int)(packet[offset + 3]) << 24 | (unsigned int)(packet[offset + 2]) << 16 | (unsigned int)(packet[offset + 1]) << 8 | (unsigned int)(packet[offset + 0]));
             p_systemStateSettings->gDynamicSplitFlag = ((unsigned int)(packet[offset + 7]) << 24 | (unsigned int)(packet[offset + 6]) << 16 | (unsigned int)(packet[offset + 5]) << 8 | (unsigned int)(packet[offset + 4]));
             p_systemStateSettings->gLteAlwaysOnFlag = ((unsigned int)(packet[offset + 11]) << 24 | (unsigned int)(packet[offset + 10]) << 16 | (unsigned int)(packet[offset + 9]) << 8 | (unsigned int)(packet[offset + 8]));
@@ -520,7 +521,7 @@ void DataReceive::receiveLteControl(char *packet)
             p_systemStateSettings->GMAIPCMessage(8, 0, 0, false, 6);
 
 
-            tfcMessage.init((unsigned char*)packet, dataOffset + p_systemStateSettings->sizeofGMAMessageHeader);
+            tfcMessage.init((unsigned char*)packet, dataOffset + p_systemStateSettings->sizeofDlGMAMessageHeader);
             switch (tfcMessage.getProtoType())
             {
             case 0: //disable UL QoS flow
@@ -616,7 +617,7 @@ void DataReceive::receiveLteControl(char *packet)
     case 7:
     {
         p_systemStateSettings->GMAIPCMessage(5, seqNumber, p_systemStateSettings->currentSysTimeMs, false, 0); //controlManager.receiveLteTSA(seqNumber, p_systemStateSettings->currentSysTimeMs);
-        vnicTSA.init((unsigned char *)packet, dataOffset + p_systemStateSettings->sizeofGMAMessageHeader); //GMA header + ip header + udp header
+        vnicTSA.init((unsigned char *)packet, dataOffset + p_systemStateSettings->sizeofDlGMAMessageHeader); //GMA header + ip header + udp header
         if (!measurementManager.measurementOn)
             {
                 measurementManager.measureCycleStart(vnicTSA.getStartSn1()); //start next measurement cycle from start-Sn

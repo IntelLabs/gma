@@ -77,6 +77,12 @@ struct network_info
 	u_short	ctl_port;
 };
 
+struct dl_virtual_message_header {
+	char flag[2];
+	u_short client_id;
+}__attribute__((packed));
+
+
 struct virtual_message_header {
 	char flag[2];
 }__attribute__((packed));
@@ -107,7 +113,7 @@ struct virtual_dl_data_header {
 
 }__attribute__((packed));
 
-#define VIRTUAL_MESSAGE 2
+#define VIRTUAL_DL_MESSAGE 4
 #define VIRTUAL_DL_DATA 14
 #define VIRTUAL_UL_DATA 11
 

@@ -954,9 +954,11 @@ void config_per_user_queue(int array_index)
 	popen_no_msg(ss.str().c_str(), ss.str().size());
 
 	ss.str(std::string());
-	ss << "tc qdisc add dev " << wlan_interface << " parent 1:" << hex << (wifiNrtFlowBit + clientId) << " handle " << (wifiNrtFlowBit + clientId) << dec << ":0 pfifo limit " << wifiQueueLimit;
+	//ss << "tc qdisc add dev " << wlan_interface << " parent 1:" << hex << (wifiNrtFlowBit + clientId) << " handle " << (wifiNrtFlowBit + clientId) << dec << ":0 pfifo limit " << wifiQueueLimit;
+	ss << "tc qdisc add dev " << wlan_interface << " parent 1:" << hex << (wifiNrtFlowBit + clientId) << " handle " << (wifiNrtFlowBit + clientId) << dec << ":0 tbf rate " << WIFI_RATE_MBPS << "mbit" << " latency 50ms burst 10mbit";
 	//printf("[QOS] %s\n", ss.str().c_str());
 	popen_no_msg(ss.str().c_str(), ss.str().size());
+
 
 	int lteQueueLimit = max((u_int)10, LTE_DELAY_MS);
 
@@ -966,13 +968,47 @@ void config_per_user_queue(int array_index)
 	popen_no_msg(ss.str().c_str(), ss.str().size());
 
 	ss.str(std::string());
-	ss << "tc qdisc add dev " << net_cfg.lte_interface << " parent 1:" << hex << (lteNrtFlowBit + clientId) << " handle " << (lteNrtFlowBit + clientId) << dec << ":0 pfifo limit " << lteQueueLimit;
+	//ss << "tc qdisc add dev " << net_cfg.lte_interface << " parent 1:" << hex << (lteNrtFlowBit + clientId) << " handle " << (lteNrtFlowBit + clientId) << dec << ":0 pfifo limit " << lteQueueLimit;
+	ss << "tc qdisc add dev " << net_cfg.lte_interface << " parent 1:" << hex << (lteNrtFlowBit + clientId) << " handle " << (lteNrtFlowBit + clientId) << dec << ":0 tbf rate " << LTE_RATE_MBPS << "mbit" << " latency 50ms burst 10mbit";
 	//printf("[QOS] %s\n", ss.str().c_str());
 	popen_no_msg(ss.str().c_str(), ss.str().size());
 
+
+	int wifi_delay = 0; //ms
+    ss.str(std::string());
+	ss << "tc qdisc add dev " << wlan_interface << " parent " << hex << (wifiNrtFlowBit + clientId) << dec << ":1 netem delay " << wifi_delay << "ms";
+	//printf("[QOS] %s\n", ss.str().c_str());
+	popen_no_msg(ss.str().c_str(), ss.str().size());
+
+
+	int lte_delay = 0; //ms
+	ss.str(std::string());
+	ss << "tc qdisc add dev " << net_cfg.lte_interface << " parent " << hex << (lteNrtFlowBit + clientId) << dec << ":1 netem delay " << lte_delay << "ms";
+	//printf("[QOS] %s\n", ss.str().c_str());
+	popen_no_msg(ss.str().c_str(), ss.str().size());
+	
 	int startNum = 256; //0x100
 	int msByte = (clientId >> 8) & 0x000000FF;
 	int lsByte = clientId & 0x000000FF;
+
+	
+	//Flow Filtering: control (wifi)
+	ss.str(std::string());
+	ss << "tc filter add dev " << wlan_interface << " parent 1: prio 5 handle ::5 protocol ip u32 ht " << hex << startNum + msByte << ":" << lsByte << " match \\" << "\n";
+	ss << "ip sport 10021 0xffff match \\" << "\n";
+	ss << "u16 0x0000 0xffff at 28 flowid 1:" << hex << (wifiNrtFlowBit + clientId) << dec;
+	//printf("[QOS] %s\n", ss.str().c_str());
+	popen_no_msg(ss.str().c_str(), ss.str().size());
+
+	
+	//Flow Filtering: control (lte)
+	ss.str(std::string());
+	ss << "tc filter add dev " << net_cfg.lte_interface << " parent 1: prio 5 handle ::6 protocol ip u32 ht " << hex << startNum + msByte << ":" << lsByte << " match \\" << "\n";
+	ss << "ip sport 10020 0xffff match \\" << "\n";
+	ss << "u16 0x0000 0xffff at 28 flowid 1:" << hex << (lteNrtFlowBit + clientId) << dec;
+	//printf("[QOS] %s\n", ss.str().c_str());
+	popen_no_msg(ss.str().c_str(), ss.str().size());
+
 
 	//Flow Filtering: Flow ID (=2, wifi)
 	ss.str(std::string());
@@ -3950,9 +3986,11 @@ void* receive_winapp_control_message_thread(void* lpParam)
 					client_info_arrays[array_index].tscmsg.L1 = *(u_char*)&recv_buf[16];
 					client_info_arrays[array_index].tscmsg.flag = 1;
 
-					struct virtual_message_header* header = (struct virtual_message_header*)send_buf;
+					struct dl_virtual_message_header* header = (struct dl_virtual_message_header*)send_buf;
 					*(u_short*)header->flag = 0;
-					tsc_msg_header* tsc_req = (tsc_msg_header*)(send_buf + VIRTUAL_MESSAGE);
+					header->client_id = (u_short)(htons(client_index));
+
+					tsc_msg_header* tsc_req = (tsc_msg_header*)(send_buf + VIRTUAL_DL_MESSAGE);
 					tsc_req->type = 0xFF;
 					tsc_req->vendor_id = 0;
 					tsc_req->sub_type = 4;
@@ -3966,7 +4004,7 @@ void* receive_winapp_control_message_thread(void* lpParam)
 					printf("[TSC] array_index = %d, ul_duplication_enable = %d, dl_dynamic_split_enable = %d, K1 = %d,  K2 = %d, L = %d\n",
 						array_index, tsc_req->ul_duplication_enable, tsc_req->dl_dynamic_split_enable, tsc_req->K1, tsc_req->K2, tsc_req->L1);
 
-					send_ctl_mesage_to_client(array_index, send_buf, sizeof(tsc_msg_header) + VIRTUAL_MESSAGE);
+					send_ctl_mesage_to_client(array_index, send_buf, sizeof(tsc_msg_header) + VIRTUAL_DL_MESSAGE);
 					send_tsc_ack_to_winapp();
 			
 				}
@@ -3994,7 +4032,11 @@ void* receive_winapp_control_message_thread(void* lpParam)
 					client_info_arrays[array_index].tfcmsg.port_end = *(u_short*)&recv_buf[16];
 					client_info_arrays[array_index].tfcmsg.flag = 1;
 
-					tfc_msg_header* tfc_req = (tfc_msg_header*)(send_buf + VIRTUAL_MESSAGE);
+					struct dl_virtual_message_header* header = (struct dl_virtual_message_header*)send_buf;
+					*(u_short*)header->flag = 0;
+					header->client_id = (u_short)(htons(client_index));
+
+					tfc_msg_header* tfc_req = (tfc_msg_header*)(send_buf + VIRTUAL_DL_MESSAGE);
 					tfc_req->type = 0xFF;
 					tfc_req->vendor_id = 0;
 					tfc_req->sub_type = 6;
@@ -4005,7 +4047,7 @@ void* receive_winapp_control_message_thread(void* lpParam)
 					printf("[TFC] array_index = %d, flow_id = %d, proto_type = %d, port_start = %d,  port_end = %d\n",
 						array_index, tfc_req->flow_id, tfc_req->proto_type, tfc_req->port_start, tfc_req->port_end);
 
-					send_ctl_mesage_to_client(array_index, send_buf, sizeof(tfc_msg_header) + VIRTUAL_MESSAGE);
+					send_ctl_mesage_to_client(array_index, send_buf, sizeof(tfc_msg_header) + VIRTUAL_DL_MESSAGE);
 					send_tfc_ack_to_winapp();
 				}
 				else {
@@ -4045,11 +4087,12 @@ void* receive_winapp_control_message_thread(void* lpParam)
 					if (linkId == 0)//wifi
 					{
 						u_int mWIFI_RATE_MBPS = *(u_int*)&recv_buf[13];
-						u_int mWIFI_NRT_RATE_MBPS = *(u_int*)&recv_buf[17];
+						u_int mWIFI_NRT_RATE_MBPS = (u_int)(mWIFI_RATE_MBPS/2);
+						u_int mWIFI_Q_limit = *(u_int*)&recv_buf[17];
 						u_int mWIFI_DELAY_MS = *(u_int*)&recv_buf[21];
 			
-						printf("[TXC] array_index = %d, linkId = %d, WIFI_RATE_MBPS = %d, WIFI_NRT_RATE_MBPS = %d,  WIFI_DELAY_MS = %d\n",
-							array_index, linkId, mWIFI_RATE_MBPS, mWIFI_NRT_RATE_MBPS, mWIFI_DELAY_MS);
+						printf("[TXC] array_index = %d, linkId = %d, WIFI_RATE_MBPS = %d, LTE_RT_Q_Limit = %d,  WIFI_DELAY_MS = %d\n",
+							array_index, linkId, mWIFI_RATE_MBPS, mWIFI_Q_limit, mWIFI_DELAY_MS);
 
 						//set wifi parent class, it include realtime queue and non-realtime queue
 						std::stringstream ss;
@@ -4071,7 +4114,7 @@ void* receive_winapp_control_message_thread(void* lpParam)
 						popen_no_msg(ss.str().c_str(), ss.str().size());
 
 
-						int queueLimt = max((u_int)10, mWIFI_DELAY_MS);
+						int queueLimt = max((u_int)10, mWIFI_Q_limit);
 
 						//set the queue size 
 						ss.str(std::string());
@@ -4080,20 +4123,25 @@ void* receive_winapp_control_message_thread(void* lpParam)
 						popen_no_msg(ss.str().c_str(), ss.str().size());
 
 						ss.str(std::string());
-						ss << "tc qdisc change dev " << wlan_interface << " parent 1:" << hex << (wifiNrtFlowBit + clientId) << " handle " << (wifiNrtFlowBit + clientId) << dec << ":0 pfifo limit " << queueLimt;
-						//printf("[QOS] %s\n", ss.str().c_str());
+						//ss << "tc qdisc change dev " << wlan_interface << " parent 1:" << hex << (wifiNrtFlowBit + clientId) << " handle " << (wifiNrtFlowBit + clientId) << dec << ":0 pfifo limit " << queueLimt;
+						ss << "tc qdisc change dev " << wlan_interface << " parent 1:" << hex << (wifiNrtFlowBit + clientId) << " handle " << (wifiNrtFlowBit + clientId) << dec << ":0 tbf rate " << mWIFI_RATE_MBPS << "mbit" << " latency 50ms burst 10mbit";
 						popen_no_msg(ss.str().c_str(), ss.str().size());
-			
+
+					    ss.str(std::string());
+						ss << "tc qdisc change dev " << wlan_interface << " parent " << hex << (wifiNrtFlowBit + clientId) << dec << ":1 netem delay " << mWIFI_DELAY_MS << "ms";
+						popen_no_msg(ss.str().c_str(), ss.str().size());
+
 						send_txc_ack_to_winapp();
 					}
 					else if (linkId == 1)//lte
 					{
 						u_int mLTE_RATE_MBPS = *(u_int*)&recv_buf[13];
-						u_int mLTE_NRT_RATE_MBPS = *(u_int*)&recv_buf[17];
+						u_int mLTE_NRT_RATE_MBPS = (u_int)(mLTE_RATE_MBPS/2);
+						u_int mLTE_Q_limit = *(u_int*)&recv_buf[17];
 						u_int mLTE_DELAY_MS = *(u_int*)&recv_buf[21];
 						//burstsize = max((u_int)10, (u_int)(LTE_RATE_MBPS * 10 / 8));
-						printf("[TXC] array_index = %d, linkId = %d, LTE_RATE_MBPS = %d, LTE_NRT_RATE_MBPS = %d,  LTE_DELAY_MS = %d\n",
-							array_index, linkId, mLTE_RATE_MBPS, mLTE_NRT_RATE_MBPS, mLTE_DELAY_MS);
+						printf("[TXC] array_index = %d, linkId = %d, LTE_RATE_MBPS = %d, LTE_RT_Q_Limit = %d,  LTE_DELAY_MS = %d\n",
+							array_index, linkId, mLTE_RATE_MBPS, mLTE_Q_limit, mLTE_DELAY_MS);
 						//set lte parent class, it includes realtime and non-realtime queue
 						std::stringstream ss;
 						ss << "tc class change dev " << net_cfg.lte_interface << " parent 1:0001 classid 1:" << hex << (lteLinkBit + clientId) << dec << " htb rate " << mLTE_RATE_MBPS << "mbit ceil " << mLTE_RATE_MBPS << "mbit";//per link per client
@@ -4112,7 +4160,7 @@ void* receive_winapp_control_message_thread(void* lpParam)
 						//printf("[QOS] %s\n", ss.str().c_str());
 						popen_no_msg(ss.str().c_str(), ss.str().size());
 
-						int queueLimt = max((u_int)10, mLTE_DELAY_MS);
+						int queueLimt = max((u_int)10, mLTE_Q_limit);
 
 						//set the queue size 
 						ss.str(std::string());
@@ -4121,9 +4169,13 @@ void* receive_winapp_control_message_thread(void* lpParam)
 						popen_no_msg(ss.str().c_str(), ss.str().size());
 
 						ss.str(std::string());
-						ss << "tc qdisc change dev " << net_cfg.lte_interface << " parent 1:" << hex << (lteNrtFlowBit + clientId) << " handle " << (lteNrtFlowBit + clientId) << dec << ":0 pfifo limit " << queueLimt;
-						//printf("[QOS] %s\n", ss.str().c_str());
+						//ss << "tc qdisc change dev " << net_cfg.lte_interface << " parent 1:" << hex << (lteNrtFlowBit + clientId) << " handle " << (lteNrtFlowBit + clientId) << dec << ":0 pfifo limit " << queueLimt;
+						ss << "tc qdisc change dev " << net_cfg.lte_interface << " parent 1:" << hex << (lteNrtFlowBit + clientId) << " handle " << (lteNrtFlowBit + clientId) << dec << ":0 tbf rate " << mLTE_RATE_MBPS << "mbit" << " latency 50ms burst 10mbit";
 						popen_no_msg(ss.str().c_str(), ss.str().size()); 
+						
+						ss.str(std::string());
+						ss << "tc qdisc change dev " << net_cfg.lte_interface << " parent " << hex << (lteNrtFlowBit + clientId) << dec << ":1 netem delay " << mLTE_DELAY_MS << "ms";
+						popen_no_msg(ss.str().c_str(), ss.str().size());
 
 						send_txc_ack_to_winapp();
 					}
@@ -4290,8 +4342,17 @@ ERR:
 void ProcessMsgReceivedFromWebSock(int array_index, char* buff, u_short len)
 {
 	struct	ctl_msg_fmt* fmt;
+	u_int clientId = array_index + 2;
 
 	fmt = (struct ctl_msg_fmt*)buff;
+
+	char send_buf[1400];
+	memset(send_buf, 0, 1400);
+	//set gma flag to 0, i.e., control msg
+	struct dl_virtual_message_header* header = (struct dl_virtual_message_header*)send_buf;
+	*(u_short*)header->flag = 0;
+	header->client_id = (u_short)(htons(clientId));
+
 
 	if (fmt->info.type == CLIENT_SUSPEND_REQ) {
 		int begin = *((u_char*)fmt + 2);
@@ -4328,19 +4389,13 @@ void ProcessMsgReceivedFromWebSock(int array_index, char* buff, u_short len)
 			client_info_arrays[array_index].client_probe_port, client_info_arrays[array_index].client_wifi_adapt_port, client_info_arrays[array_index].client_lte_adapt_port);
 	}
 	else if (fmt->info.type == TFC_MESSAGE_REQ) {
-		char send_buf[100];
-		//set gma flag to 0, i.e., control msg
-		struct virtual_message_header* header = (struct virtual_message_header*)send_buf;
-		*(u_short*)header->flag = 0;
-
-
 		client_info_arrays[array_index].tfcmsg.flow_id = *(u_char*)&buff[10];
 		client_info_arrays[array_index].tfcmsg.proto_type = *(u_char*)&buff[11];
 		client_info_arrays[array_index].tfcmsg.port_start = htons(*(u_short*)&buff[12]);
 		client_info_arrays[array_index].tfcmsg.port_end = htons(*(u_short*)&buff[14]);
 		client_info_arrays[array_index].tfcmsg.flag = 1;
 
-	    tfc_msg_header* tfc_req = (tfc_msg_header*)(send_buf + VIRTUAL_MESSAGE);
+	    tfc_msg_header* tfc_req = (tfc_msg_header*)(send_buf + VIRTUAL_DL_MESSAGE);
 		tfc_req->type = 0xFF;
 		tfc_req->vendor_id = 0;
 		tfc_req->sub_type = 6;
@@ -4351,17 +4406,11 @@ void ProcessMsgReceivedFromWebSock(int array_index, char* buff, u_short len)
 		printf("[TFC] array_index = %d, flow_id = %d, proto_type = %d, port_start = %d,  port_end = %d\n",
 			array_index, tfc_req->flow_id, tfc_req->proto_type, ntohs(tfc_req->port_start), ntohs(tfc_req->port_end));
 
-		send_ctl_mesage_to_client(array_index, send_buf, sizeof(tfc_msg_header) + VIRTUAL_MESSAGE);
+		send_ctl_mesage_to_client(array_index, send_buf, sizeof(tfc_msg_header) + VIRTUAL_DL_MESSAGE);
 		send_tfc_ack_to_ncm();
 	
 	}
 	else if (fmt->info.type == TSC_MESSAGE_REQ) {
-		char send_buf[100];
-
-		//set gma flag to 0, i.e., control msg
-		struct virtual_message_header* header = (struct virtual_message_header*)send_buf;
-		*(u_short*)header->flag = 0;
-
 		client_info_arrays[array_index].tscmsg.ul_duplication_enable = *(u_char*)&buff[10];
 		client_info_arrays[array_index].tscmsg.dl_dynamic_split_enable = *(u_char*)&buff[11];
 		client_info_arrays[array_index].tscmsg.flow_id = 1;
@@ -4370,7 +4419,7 @@ void ProcessMsgReceivedFromWebSock(int array_index, char* buff, u_short len)
 		client_info_arrays[array_index].tscmsg.L1 = *(u_char*)&buff[14];
 		client_info_arrays[array_index].tscmsg.flag = 1;
 
-		tsc_msg_header* tsc_req = (tsc_msg_header*)(send_buf + VIRTUAL_MESSAGE);
+		tsc_msg_header* tsc_req = (tsc_msg_header*)(send_buf + VIRTUAL_DL_MESSAGE);
 		tsc_req->type = 0xFF;
 		tsc_req->vendor_id = 0;
 		tsc_req->sub_type = 4;
@@ -4384,14 +4433,12 @@ void ProcessMsgReceivedFromWebSock(int array_index, char* buff, u_short len)
 		printf("[TSC] array_index = %d, ul_duplication_enable = %d, dl_dynamic_split_enable = %d, K1 = %d,  K2 = %d, L = %d\n",
 			array_index, tsc_req->ul_duplication_enable, tsc_req->dl_dynamic_split_enable, tsc_req->K1, tsc_req->K2, tsc_req->L1);
 
-		send_ctl_mesage_to_client(array_index, send_buf, sizeof(tsc_msg_header) + VIRTUAL_MESSAGE);
+		send_ctl_mesage_to_client(array_index, send_buf, sizeof(tsc_msg_header) + VIRTUAL_DL_MESSAGE);
 		send_tsc_ack_to_ncm();
 	}
 
 	else if (fmt->info.type == TXC_MESSAGE_REQ && ENABLE_DL_QOS) {
 		u_char linkId = buff[10];
-
-		int clientId = array_index + 2;
 
 		//int wifiLinkBit = 0;
 		int wifiRtFlowBit = 16384;
@@ -4409,11 +4456,12 @@ void ProcessMsgReceivedFromWebSock(int array_index, char* buff, u_short len)
 		if (linkId == 0)//wifi
 		{
 			u_int mWIFI_RATE_MBPS = *(u_int*)&buff[11];
-			u_int mWIFI_NRT_RATE_MBPS = *(u_int*)&buff[15];
+			u_int mWIFI_NRT_RATE_MBPS = (u_int)(mWIFI_RATE_MBPS/2); 
+			u_int mWIFI_Q_Limit = *(u_int*)&buff[15];
 			u_int mWIFI_DELAY_MS = *(u_int*)&buff[19];
 			
-			printf("[TXC] array_index = %d, linkId = %d, WIFI_RATE_MBPS = %d, WIFI_NRT_RATE_MBPS = %d,  WIFI_DELAY_MS = %d\n",
-				array_index, linkId, mWIFI_RATE_MBPS, mWIFI_NRT_RATE_MBPS, mWIFI_DELAY_MS);
+			printf("[TXC] array_index = %d, linkId = %d, WIFI_RATE_MBPS = %d, WIFI_RT_Q_Limit = %d,  WIFI_DELAY_MS = %d\n",
+				array_index, linkId, mWIFI_RATE_MBPS, mWIFI_Q_Limit, mWIFI_DELAY_MS);
 
 			//set wifi parent class, it include realtime queue and non-realtime queue
 			std::stringstream ss;
@@ -4435,7 +4483,7 @@ void ProcessMsgReceivedFromWebSock(int array_index, char* buff, u_short len)
 			popen_no_msg(ss.str().c_str(), ss.str().size());
 
 			
-			int queueLimt = max((u_int)10, mWIFI_DELAY_MS);
+			int queueLimt = max((u_int)10, mWIFI_Q_Limit);
 
 			//set the queue size 
 			ss.str(std::string());
@@ -4444,20 +4492,26 @@ void ProcessMsgReceivedFromWebSock(int array_index, char* buff, u_short len)
 			popen_no_msg(ss.str().c_str(), ss.str().size());
 
 			ss.str(std::string());
-			ss << "tc qdisc change dev " << wlan_interface << " parent 1:" << hex << (wifiNrtFlowBit + clientId) << " handle " << (wifiNrtFlowBit + clientId) << dec << ":0 pfifo limit " << queueLimt;
+			//ss << "tc qdisc change dev " << wlan_interface << " parent 1:" << hex << (wifiNrtFlowBit + clientId) << " handle " << (wifiNrtFlowBit + clientId) << dec << ":0 pfifo limit " << queueLimt;
+			ss << "tc qdisc change dev " << wlan_interface << " parent 1:" << hex << (wifiNrtFlowBit + clientId) << " handle " << (wifiNrtFlowBit + clientId) << dec << ":0 tbf rate " << mWIFI_RATE_MBPS << "mbit" << " latency 50ms burst 10mbit";
 			//printf("[QOS] %s\n", ss.str().c_str());
 			popen_no_msg(ss.str().c_str(), ss.str().size());
-			
+
+			ss.str(std::string());
+			ss << "tc qdisc change dev " << wlan_interface << " parent " << hex << (wifiNrtFlowBit + clientId) << dec << ":1 netem delay " << mWIFI_DELAY_MS << "ms";
+			popen_no_msg(ss.str().c_str(), ss.str().size());
+
 			send_txc_ack_to_ncm();
 		}
 		else if (linkId == 1)//lte
 		{
 			u_int mLTE_RATE_MBPS = *(u_int*)&buff[11];
-			u_int mLTE_NRT_RATE_MBPS = *(u_int*)&buff[15];
+			u_int mLTE_NRT_RATE_MBPS =(u_int)(mLTE_RATE_MBPS/2);
+			u_int mLTE_Q_Limit = *(u_int*)&buff[15];
 			u_int mLTE_DELAY_MS = *(u_int*)&buff[19];
 			//burstsize = max((u_int)10, (u_int)(LTE_RATE_MBPS * 10 / 8));
-			printf("[TXC] array_index = %d, linkId = %d, LTE_RATE_MBPS = %d, LTE_NRT_RATE_MBPS = %d,  LTE_DELAY_MS = %d\n",
-				array_index, linkId, mLTE_RATE_MBPS, mLTE_NRT_RATE_MBPS, mLTE_DELAY_MS);
+			printf("[TXC] array_index = %d, linkId = %d, LTE_RATE_MBPS = %d, LTE_RT_Q_Limit = %d,  LTE_DELAY_MS = %d\n",
+				array_index, linkId, mLTE_RATE_MBPS, mLTE_Q_Limit, mLTE_DELAY_MS);
 			//set lte parent class, it includes realtime and non-realtime queue
 			std::stringstream ss;
 			ss << "tc class change dev " << net_cfg.lte_interface << " parent 1:0001 classid 1:" << hex << (lteLinkBit + clientId) << dec << " htb rate " << mLTE_RATE_MBPS << "mbit ceil " << mLTE_RATE_MBPS << "mbit";//per link per client
@@ -4476,7 +4530,7 @@ void ProcessMsgReceivedFromWebSock(int array_index, char* buff, u_short len)
 			//printf("[QOS] %s\n", ss.str().c_str());
 			popen_no_msg(ss.str().c_str(), ss.str().size());
 
-			int queueLimt = max((u_int)10, mLTE_DELAY_MS);
+			int queueLimt = max((u_int)10, mLTE_Q_Limit);
 			
 			//set the queue size 
 			ss.str(std::string());
@@ -4485,9 +4539,15 @@ void ProcessMsgReceivedFromWebSock(int array_index, char* buff, u_short len)
 			popen_no_msg(ss.str().c_str(), ss.str().size());
 
 			ss.str(std::string());
-			ss << "tc qdisc change dev " << net_cfg.lte_interface << " parent 1:" << hex << (lteNrtFlowBit + clientId) << " handle " << (lteNrtFlowBit + clientId) << dec << ":0 pfifo limit " << queueLimt;
+			//ss << "tc qdisc change dev " << net_cfg.lte_interface << " parent 1:" << hex << (lteNrtFlowBit + clientId) << " handle " << (lteNrtFlowBit + clientId) << dec << ":0 pfifo limit " << queueLimt;
+			ss << "tc qdisc change dev " << net_cfg.lte_interface << " parent 1:" << hex << (lteNrtFlowBit + clientId) << " handle " << (lteNrtFlowBit + clientId) << dec << ":0 tbf rate " << mLTE_RATE_MBPS << "mbit" << " latency 50ms burst 10mbit";
 			//printf("[QOS] %s\n", ss.str().c_str());
 			popen_no_msg(ss.str().c_str(), ss.str().size()); 
+
+			ss.str(std::string());
+			ss << "tc qdisc change dev " << net_cfg.lte_interface << " parent " << hex << (lteNrtFlowBit + clientId) << dec << ":1 netem delay " << mLTE_DELAY_MS << "ms";
+			popen_no_msg(ss.str().c_str(), ss.str().size());
+
 
 			send_txc_ack_to_ncm();
 		}
@@ -4499,21 +4559,15 @@ void ProcessMsgReceivedFromWebSock(int array_index, char* buff, u_short len)
 	}
 
 	else if (fmt->info.type == CCU_MESSAGE_REQ) {
-		int totalLength = (int)len - (int)sizeof(ctl_msg_info) - 4 + VIRTUAL_MESSAGE + (int)sizeof(ccu_msg_header);
+		int totalLength = (int)len - (int)sizeof(ctl_msg_info) - 4 + VIRTUAL_DL_MESSAGE + (int)sizeof(ccu_msg_header);
 		if (totalLength > 0 && totalLength < 1400 && len < 1400 && len > 0)
 		{
-			char send_buf[1400];		
-			memset(send_buf, 0, 1400);
-			//set gma flag to 0, i.e., control msg
-			struct virtual_message_header* header = (struct virtual_message_header*)send_buf;
-			*(u_short*)header->flag = 0;
-
-			ccu_msg_header* ccu_req = (ccu_msg_header*)(send_buf + VIRTUAL_MESSAGE);
+			ccu_msg_header* ccu_req = (ccu_msg_header*)(send_buf + VIRTUAL_DL_MESSAGE);
 			ccu_req->type = 0xFF;
 			ccu_req->vendor_id = 0;
 			ccu_req->sub_type = 5;
 			ccu_req->len = totalLength;
-			memcpy(send_buf + VIRTUAL_MESSAGE + sizeof(ccu_msg_header), buff + sizeof(ctl_msg_info) + 4, len - sizeof(ctl_msg_info) - 4);
+			memcpy(send_buf + VIRTUAL_DL_MESSAGE + sizeof(ccu_msg_header), buff + sizeof(ctl_msg_info) + 4, len - sizeof(ctl_msg_info) - 4);
 			send_ctl_mesage_to_client(array_index, send_buf, totalLength);
 			send_ccu_ack_to_ncm();
 			printf("receive ccu message req\n");
@@ -4789,6 +4843,14 @@ void * talk_with_ncm_thread(void *lpParam)
 				//printf("[QOS] %s\n", ss.str().c_str());
 				popen_no_msg(ss.str().c_str(), ss.str().size());
 
+
+				//add filter, find the hashtable based on the MSB of the client ID
+				ss.str(std::string());
+				ss << "tc filter add dev " << wlan_interface << " parent 1: prio 5 protocol ip u32 match u16 0x0000 0xffff at 28 hashkey mask 0x00000f00 at 28 link A00:";
+				//printf("[QOS] %s\n", ss.str().c_str());
+				popen_no_msg(ss.str().c_str(), ss.str().size());
+
+
 				for (int tableInd = 0; tableInd < hashTableNum; tableInd++)
 				{
 					//setup the 256 buckets in each hash table
@@ -4834,6 +4896,12 @@ void * talk_with_ncm_thread(void *lpParam)
 					//add filter, find the hashtable based on the MSB of the client ID
 					ss.str(std::string());
 					ss << "tc filter add dev " << net_cfg.lte_interface << " parent 1: prio 5 protocol ip u32 match u16 0xF807 0xffff at 28 hashkey mask 0x00000f00 at 28 link A00:";
+					//printf("[QOS] %s\n", ss.str().c_str());
+					popen_no_msg(ss.str().c_str(), ss.str().size());
+
+					//add filter, find the hashtable based on the MSB of the client ID
+					ss.str(std::string());
+					ss << "tc filter add dev " << net_cfg.lte_interface << " parent 1: prio 5 protocol ip u32 match u16 0x0000 0xffff at 28 hashkey mask 0x00000f00 at 28 link A00:";
 					//printf("[QOS] %s\n", ss.str().c_str());
 					popen_no_msg(ss.str().c_str(), ss.str().size());
 

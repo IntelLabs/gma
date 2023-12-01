@@ -74,6 +74,7 @@ SystemStateSettings::SystemStateSettings()
     reorderRepeatNum = 2;
     gmaMTUsize = 1500;
     sizeofGMAMessageHeader = 2;
+    sizeofDlGMAMessageHeader = 4;
     sizeofDlGmaDataHeader = 14;
     sizeofUlGmaDataHeader = 12;
 
@@ -260,6 +261,7 @@ void SystemStateSettings::updateSystemSettings()
     reorderRepeatNum = 2;
     gmaMTUsize = 1500;
     sizeofGMAMessageHeader = 2;
+    sizeofDlGMAMessageHeader = 4;
     sizeofDlGmaDataHeader = 14;
     sizeofUlGmaDataHeader = 12;
 

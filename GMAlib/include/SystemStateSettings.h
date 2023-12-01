@@ -71,6 +71,7 @@ public:
     int reorderRepeatNum;
     int gmaMTUsize;
     int sizeofGMAMessageHeader;
+    int sizeofDlGMAMessageHeader;
     int sizeofDlGmaDataHeader;
     int sizeofUlGmaDataHeader;
 

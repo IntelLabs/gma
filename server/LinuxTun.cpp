@@ -111,11 +111,11 @@ void vnic_tun_send_ctl_ack(struct sockaddr_in remote_addr, char *msg, int len)
 	memset(ack_buf, 0, 100);
 
 	//set gma flag to 0, i.e., control msg
-	struct virtual_message_header* header = (struct virtual_message_header*)ack_buf;
+	struct dl_virtual_message_header* header = (struct dl_virtual_message_header*)ack_buf;
 	*(u_short*)header->flag = 0;
-
 	client_index = (u_int)(ntohl(remote_addr.sin_addr.s_addr) & 0x0000FFFF);
-	
+	header->client_id = (u_short)(htons(client_index));
+
 	if (client_index >= 2 && client_index < max_client_num + 2) {
 		array_index = client_index - 2;
 	}
@@ -128,7 +128,9 @@ void vnic_tun_send_ctl_ack(struct sockaddr_in remote_addr, char *msg, int len)
 	client_info_arrays[array_index].client_vnic_addr.sin_port = remote_addr.sin_port;
 	if (msg[0] == PROBE_VNIC) {
 		struct vnic_probe_req *probe = (struct vnic_probe_req *)msg;
-		struct vnic_ack* vack = (struct vnic_ack*)(ack_buf + VIRTUAL_MESSAGE);
+		//struct vnic_ack* vack = (struct vnic_ack*)(ack_buf + VIRTUAL_DL_MESSAGE);
+		struct vnic_ack* vack = (struct vnic_ack*)(ack_buf + VIRTUAL_DL_MESSAGE);
+
 		vack->type    = ACK_VNIC;
 		vack->cid     = probe->cid;
 		vack->key	  = probe->key;
@@ -149,7 +151,7 @@ void vnic_tun_send_ctl_ack(struct sockaddr_in remote_addr, char *msg, int len)
 	} 
 	else if (msg[0] == TSU_VNIC) {
 		struct vnic_tsu_req *tsu = (struct vnic_tsu_req *)msg;
-		struct traffic_split_ack *vack = (struct traffic_split_ack*)(ack_buf + VIRTUAL_MESSAGE);
+		struct traffic_split_ack *vack = (struct traffic_split_ack*)(ack_buf + VIRTUAL_DL_MESSAGE);
 		vack->type    = TSA_VNIC;
 		vack->cid     = tsu->cid;
 		vack->key	  = tsu->key;
@@ -220,7 +222,7 @@ void vnic_tun_send_ctl_ack(struct sockaddr_in remote_addr, char *msg, int len)
 	}
 	else if ((msg[0] & 0xFF) == MEASURE_REPORT) {
 		struct measure_report_req* measure_report = (struct measure_report_req*)msg;
-		struct vnic_ack* vack = (struct vnic_ack*)(ack_buf + VIRTUAL_MESSAGE);
+		struct vnic_ack* vack = (struct vnic_ack*)(ack_buf + VIRTUAL_DL_MESSAGE);
 		vack->type = ACK_VNIC;
 		vack->cid = measure_report->cid;
 		vack->key = measure_report->key;
@@ -280,10 +282,10 @@ void vnic_tun_send_ctl_ack(struct sockaddr_in remote_addr, char *msg, int len)
 	}
 	//printf("control: %d, wifi: %d, lte: %d , send to: %d\n", g_vnic_ctl_sockfd, g_wifi_tunnel_sockfd, g_lte_tunnel_sockfd, vsock);
 
-	ret = sendto(vsock, (char *)&ack_buf, ack_len + VIRTUAL_MESSAGE, 0, (struct sockaddr *)&receiver_addr, sizeof(receiver_addr));
+	ret = sendto(vsock, (char *)&ack_buf, ack_len + VIRTUAL_DL_MESSAGE, 0, (struct sockaddr *)&receiver_addr, sizeof(receiver_addr));
 	while (ret == -1 && ++t < 3) {
 		usleep(1);
-		ret = sendto(vsock, (char *)&ack_buf, ack_len + VIRTUAL_MESSAGE, 0, (struct sockaddr *)&receiver_addr, sizeof(receiver_addr));
+		ret = sendto(vsock, (char *)&ack_buf, ack_len + VIRTUAL_DL_MESSAGE, 0, (struct sockaddr *)&receiver_addr, sizeof(receiver_addr));
 	}
 	if (ret < 0) {
 		printf("[err] vnic_tun_send_ctl_ack, msg type: %d", msg[0]);
@@ -296,9 +298,10 @@ void vnic_tun_send_ctl_ack(struct sockaddr_in remote_addr, char *msg, int len)
 
 			char send_buf[100];
 			//set gma flag to 0, i.e., control msg
-			struct virtual_message_header* header = (struct virtual_message_header*)send_buf;
+			struct dl_virtual_message_header* header = (struct dl_virtual_message_header*)send_buf;
 			*(u_short*)header->flag = 0;
-			tfc_msg_header* tfc_req = (tfc_msg_header*)(send_buf + VIRTUAL_MESSAGE);
+			header->client_id = (u_short)(htons(client_index));
+			tfc_msg_header* tfc_req = (tfc_msg_header*)(send_buf + VIRTUAL_DL_MESSAGE);
 			tfc_req->type = 0xFF;
 			tfc_req->vendor_id = 0;
 			tfc_req->sub_type = 6;
@@ -308,7 +311,7 @@ void vnic_tun_send_ctl_ack(struct sockaddr_in remote_addr, char *msg, int len)
 			tfc_req->port_end = client_info_arrays[array_index].tfcmsg.port_end;
 			printf("[TFC] array_index = %d, flow_id = %d, proto_type = %d, port_start = %d,  port_end = %d\n",
 				array_index, tfc_req->flow_id, tfc_req->proto_type, ntohs(tfc_req->port_start), ntohs(tfc_req->port_end));
-			int len = sizeof(tfc_msg_header) + VIRTUAL_MESSAGE;
+			int len = sizeof(tfc_msg_header) + VIRTUAL_DL_MESSAGE;
 			if (sendto(g_wifi_tunnel_sockfd, send_buf, len, 0, (struct sockaddr*)&client_info_arrays[array_index].client_wifi_addr, sizeof(client_info_arrays[array_index].client_wifi_addr)) == -1)
 			 printf("g_wifi_tunnel_sockfd send failed \n");
 		}
@@ -316,10 +319,10 @@ void vnic_tun_send_ctl_ack(struct sockaddr_in remote_addr, char *msg, int len)
 		{ //retransmit TFC message
 			char send_buf[100];
 			//set gma flag to 0, i.e., control msg
-			struct virtual_message_header* header = (struct virtual_message_header*)send_buf;
+			struct dl_virtual_message_header* header = (struct dl_virtual_message_header*)send_buf;
 			*(u_short*)header->flag = 0;
-
-			tsc_msg_header* tsc_req = (tsc_msg_header*)(send_buf + VIRTUAL_MESSAGE);
+			header->client_id = (u_short)(htons(client_index));
+			tsc_msg_header* tsc_req = (tsc_msg_header*)(send_buf + VIRTUAL_DL_MESSAGE);
 			tsc_req->type = 0xFF;
 			tsc_req->vendor_id = 0;
 			tsc_req->sub_type = 4;
@@ -332,7 +335,7 @@ void vnic_tun_send_ctl_ack(struct sockaddr_in remote_addr, char *msg, int len)
 			tsc_req->L1 = client_info_arrays[array_index].tscmsg.L1;
 			printf("[TSC] array_index = %d, ul_duplication_enable = %d, dl_dynamic_split_enable = %d, K1 = %d,  K2 = %d, L = %d\n",
 				array_index, tsc_req->ul_duplication_enable, tsc_req->dl_dynamic_split_enable, tsc_req->K1, tsc_req->K2, tsc_req->L1);
-			int len = sizeof(tsc_msg_header) + VIRTUAL_MESSAGE;
+			int len = sizeof(tsc_msg_header) + VIRTUAL_DL_MESSAGE;
 			if (sendto(g_wifi_tunnel_sockfd, send_buf, len, 0, (struct sockaddr*)&client_info_arrays[array_index].client_wifi_addr, sizeof(client_info_arrays[array_index].client_wifi_addr)) == -1)
 			 printf("g_wifi_tunnel_sockfd send failed \n");
 		}
