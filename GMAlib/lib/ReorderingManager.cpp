@@ -545,6 +545,9 @@ int ReorderingWorker::release_in_order_packets()
 					if (timeout <= 0) 
 					{
 
+						if(HRreorderingTimeout < 1000) //increase timer up to 1 second 
+							HRreorderingTimeout = queue_time + 20;
+
 						stringstream ss;
 						ss << "\n[reordering timeout]" << timeout << " queue time: " << queue_time << endl;
 						p_systemStateSettings->PrintLogs(ss);
