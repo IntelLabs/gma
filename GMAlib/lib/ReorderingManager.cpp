@@ -538,12 +538,16 @@ int ReorderingWorker::release_in_order_packets()
 				else
 				{   //timeout 
 					
-					timeout = HRreorderingTimeout - (p_systemStateSettings->currentTimeMs - rcv_timestamp[b_index]);
+					int queue_time = p_systemStateSettings->currentTimeMs - rcv_timestamp[b_index];
+					timeout = HRreorderingTimeout - queue_time;
 					//timeout = 1000 - (p_systemStateSettings->currentTimeMs - rcv_timestamp[b_index]);
 
 					if (timeout <= 0) 
 					{
-						printf("\n ****** reordering timeout %d waiting %d *****\n", timeout, p_systemStateSettings->currentTimeMs - rcv_timestamp[b_index]);
+
+						stringstream ss;
+						ss << "\n[reordering timeout]" << timeout << " queue time: " << queue_time << endl;
+						p_systemStateSettings->PrintLogs(ss);
 						p_systemStateSettings->numOfReorderingTimeout++; 
 						outputHRPacket(ringBuffer[b_index], rcv_PktLen[b_index], rcv_PktSn[b_index], tx_timestamp[b_index]);
 						slotOccupied[b_index] = 0;
