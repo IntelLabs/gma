@@ -170,7 +170,7 @@ void ReorderingManager::updateSystemSettings()
 
 	nrtReorderingWorker.updateSystemSettings(p_systemStateSettings, ringBuffer, slotOccupied,
 		rcv_timestamp, tx_timestamp, rcv_PktSn, rcv_PktLen, ringBufferInfo,
-		lNRTreorderingTimeout, lNRTBufferSize, true, rcv_PktType, rcv_PktLSn);
+		lNRTreorderingTimeout, lNRTBufferSize, false, rcv_PktType, rcv_PktLSn);
 
 }
 
