@@ -170,7 +170,7 @@ void ReorderingManager::updateSystemSettings()
 
 	nrtReorderingWorker.updateSystemSettings(p_systemStateSettings, ringBuffer, slotOccupied,
 		rcv_timestamp, tx_timestamp, rcv_PktSn, rcv_PktLen, ringBufferInfo,
-		lNRTreorderingTimeout, lNRTBufferSize, false, rcv_PktType, rcv_PktLSn);
+		lNRTreorderingTimeout, lNRTBufferSize, true, rcv_PktType, rcv_PktLSn);
 
 }
 
@@ -537,10 +537,13 @@ int ReorderingWorker::release_in_order_packets()
 				}
 				else
 				{   //timeout 
+					
 					timeout = HRreorderingTimeout - (p_systemStateSettings->currentTimeMs - rcv_timestamp[b_index]);
+					//timeout = 1000 - (p_systemStateSettings->currentTimeMs - rcv_timestamp[b_index]);
+
 					if (timeout <= 0) 
 					{
-						//printf("\n timeout %d  now %d, tx time %d", timeout, p_systemStateSettings->currentTimeMs, tx_timestamp[b_index]);
+						printf("\n ****** reordering timeout %d waiting %d *****\n", timeout, p_systemStateSettings->currentTimeMs - rcv_timestamp[b_index]);
 						p_systemStateSettings->numOfReorderingTimeout++; 
 						outputHRPacket(ringBuffer[b_index], rcv_PktLen[b_index], rcv_PktSn[b_index], tx_timestamp[b_index]);
 						slotOccupied[b_index] = 0;
