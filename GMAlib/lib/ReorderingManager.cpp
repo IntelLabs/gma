@@ -537,7 +537,7 @@ int ReorderingWorker::release_in_order_packets()
 				}
 				else
 				{   //timeout 
-					timeout = HRreorderingTimeout - (p_systemStateSettings->currentTimeMs - tx_timestamp[b_index]);
+					timeout = HRreorderingTimeout - (p_systemStateSettings->currentTimeMs - rcv_timestamp[b_index]);
 					if (timeout <= 0) 
 					{
 						//printf("\n timeout %d  now %d, tx time %d", timeout, p_systemStateSettings->currentTimeMs, tx_timestamp[b_index]);
