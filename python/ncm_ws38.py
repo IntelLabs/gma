@@ -363,6 +363,7 @@ def send_build_tun_req():
         MEASURE_INTERVAL_S_CONFIG = config['SERVER_PARAMETERS']['MEASURE_INTERVAL_S_CONFIG']
         SERVER_REPORT_CYCLE_CONFIG = config['SERVER_PARAMETERS']['SERVER_REPORT_CYCLE_CONFIG']
         ENABLE_DL_QOS_CONFIG = config['SERVER_PARAMETERS']['ENABLE_DL_QOS_CONFIG']
+        ENABLE_DL_OWD_OFFSET_CONFIG = config['SERVER_PARAMETERS']['ENABLE_DL_OWD_OFFSET_CONFIG']
         ENABLE_MEASUREMENT_CONFIG = config['SERVER_PARAMETERS']['ENABLE_MEASUREMENT_CONFIG']
         ENABLE_MEASURE_REPORT_CONFIG = config['SERVER_PARAMETERS']['ENABLE_MEASURE_REPORT_CONFIG']
         ENABLE_UL_REORDERING_CONFIG = config['SERVER_PARAMETERS']['ENABLE_UL_REORDERING_CONFIG']
@@ -410,6 +411,7 @@ def send_build_tun_req():
                       MEASURE_INTERVAL_S_CONFIG + split_symbol + \
                       SERVER_REPORT_CYCLE_CONFIG + split_symbol + \
                       ENABLE_DL_QOS_CONFIG + split_symbol + \
+                      ENABLE_DL_OWD_OFFSET_CONFIG + split_symbol + \
                       ENABLE_MEASUREMENT_CONFIG + split_symbol + \
                       ENABLE_MEASURE_REPORT_CONFIG + split_symbol + \
                       ENABLE_UL_REORDERING_CONFIG + split_symbol + \

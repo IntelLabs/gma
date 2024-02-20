@@ -537,20 +537,19 @@ int ReorderingWorker::release_in_order_packets()
 				}
 				else
 				{   //timeout 
-					
 					int queue_time = p_systemStateSettings->currentTimeMs - rcv_timestamp[b_index];
 					timeout = HRreorderingTimeout - queue_time;
-					//timeout = 1000 - (p_systemStateSettings->currentTimeMs - rcv_timestamp[b_index]);
-
+					
 					if (timeout <= 0) 
 					{
-
 						if(HRreorderingTimeout < 1000) //increase timer up to 1 second 
 							HRreorderingTimeout = queue_time + 20;
 
 						stringstream ss;
 						ss << "\n[reordering timeout]" << timeout << " queue time: " << queue_time << endl;
 						p_systemStateSettings->PrintLogs(ss);
+						
+						//printf("\n timeout %d  now %d, tx time %d", timeout, p_systemStateSettings->currentTimeMs, tx_timestamp[b_index]);
 						p_systemStateSettings->numOfReorderingTimeout++; 
 						outputHRPacket(ringBuffer[b_index], rcv_PktLen[b_index], rcv_PktSn[b_index], tx_timestamp[b_index]);
 						slotOccupied[b_index] = 0;
@@ -575,14 +574,17 @@ int ReorderingWorker::release_in_order_packets()
 							ul_packet_Lsn = rcv_PktLSn[b_index];
 							ul_packet_type = rcv_PktType[b_index];
 						} //////////////////////////////////////
-						else if(p_systemStateSettings->reorderLsnEnhanceFlag == 1 && !dropOutOrderPkt)
+						//else if(p_systemStateSettings->reorderLsnEnhanceFlag == 1 && !dropOutOrderPkt)
+						else if(!dropOutOrderPkt) //non-real-time splitting 
 						{
 							if (rcv_PktType[b_index] == ul_packet_type)
 							{
 								if (diff == rollover_diff(rcv_PktLSn[b_index], ul_packet_Lsn))
 								{
 									//per-link packet loss is detected, and release the packet
-									//printf("\n LSN-based eorderining link %d last SN %d last LSN %d SN %d LSN %d,", (int) ul_packet_type, ul_packet_sn, ul_packet_Lsn, rcv_PktSn[b_index], rcv_PktLSn[b_index]);
+									/*stringstream ss;
+									ss << "\n[fast packet loss detection]" << "link:" << ((int)ul_packet_type) << ",last SN:" << ul_packet_sn << ",SN:" << rcv_PktSn[b_index] << ",last LSN:" << ul_packet_Lsn << ",LSN:" << rcv_PktLSn[b_index] << endl;
+									p_systemStateSettings->PrintLogs(ss);*/
 									outputHRPacket(ringBuffer[b_index], rcv_PktLen[b_index], rcv_PktSn[b_index], tx_timestamp[b_index]);
 									slotOccupied[b_index] = 0;
 									m_rx_index_start = (m_rx_index_start + 1) % HRBufferSize;

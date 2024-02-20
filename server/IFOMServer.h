@@ -274,6 +274,8 @@ struct vnic_tsu_req {
 	u_char	K3;
 	u_char	K4;
 	u_char	L2;
+	u_char	D1;  //wifi owd offset
+	u_char	D2;  //lte owd offset
 }__attribute__((packed));
 
 struct measure_report_req {
@@ -302,8 +304,10 @@ struct traffic_split_ack {
 	u_int   time_stamp;
 	u_char	flow_id1;
 	u_int	start_sn1;//MSB is lsn, 3LSB are gsn
-	u_char	flow_id2;
-	u_int	start_sn2;//MSB is lsn, 3LSB are gsn
+	//u_char	flow_id2;
+	//u_int	start_sn2;//MSB is lsn, 3LSB are gsn
+	u_char  D1;  //wifi Tx offset adjustment   -127 ~ 127 ms
+	u_char  D2;  //lte Tx offset adjustment 
 }__attribute__((packed));
 
 struct tsc_msg_header {
@@ -563,6 +567,12 @@ struct client_info {
 	unsigned char tsu_split_count = 0;
 	unsigned short last_tsu_sn = 0;
 
+	u_int 			wifi_owd_fixed = 0;
+	u_int 			lte_owd_fixed = 0;
+	u_int 			wifi_owd_offset = 0;
+	u_int 			lte_owd_offset = 0;
+	
+
 	bool          rt_traffic_over_lte = false;
 
 	int	split_total = 0;
@@ -589,6 +599,7 @@ struct client_info {
 	unsigned int last_recv_msg_time = 0;
 	unsigned int last_recv_wifi_msg_time = 0;
 	unsigned int last_recv_lte_msg_time = 0;
+	unsigned int last_recv_tsu_owd_time = 0;
 
 	u_short* m_shared_rx_index_list = NULL; //virtual wifi index queue
 	u_short m_rx_index_start = 0;

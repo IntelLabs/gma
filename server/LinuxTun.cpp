@@ -20,7 +20,9 @@
 #include <netinet/in.h>
 #include <sys/wait.h>
 #include <iostream>
+#include <sstream>      // std::stringstream
 
+using namespace std;
 
 struct tun_server tun;
 pthread_t	tun_server_read_tun_thread_id;
@@ -100,7 +102,7 @@ int tun_write(int tun_fd, char * buf, int pkt_len)
 void vnic_tun_send_ctl_ack(struct sockaddr_in remote_addr, char *msg, int len)
 {
 	int vsock = -1;
-	char ack_buf[100];
+	u_char ack_buf[100];
 	int ack_len = 0;
 	int ret;
 	int t = 0;
@@ -150,15 +152,17 @@ void vnic_tun_send_ctl_ack(struct sockaddr_in remote_addr, char *msg, int len)
 
 	} 
 	else if (msg[0] == TSU_VNIC) {
-		struct vnic_tsu_req *tsu = (struct vnic_tsu_req *)msg;
-		struct traffic_split_ack *vack = (struct traffic_split_ack*)(ack_buf + VIRTUAL_DL_MESSAGE);
+		struct vnic_tsu_req * tsu = (struct vnic_tsu_req *)msg;
+		struct traffic_split_ack * vack = (struct traffic_split_ack*)(ack_buf + VIRTUAL_DL_MESSAGE);
 		vack->type    = TSA_VNIC;
 		vack->cid     = tsu->cid;
 		vack->key	  = tsu->key;
 		vack->seq_num = tsu->seq_num;
-		vack->time_stamp = htonl(client_info_arrays[array_index].start_time == 0 ? 0 : (get_current_mstime() + client_info_arrays[array_index].start_time) & 0x7FFFFFFF);
-
-		vack->start_sn1 = (client_info_arrays[array_index].dl_sn + 1) & 0x00FFFFFF;
+		vack->time_stamp = htonl((client_info_arrays[array_index].start_time == 0 ? 0 : (get_current_mstime() + client_info_arrays[array_index].start_time) & 0x7FFFFFFF));
+		vack->start_sn1 =  htonl(((client_info_arrays[array_index].dl_sn + 1) & 0x00FFFFFF));
+		vack->D1 = 0; //D1
+		vack->D2 = 0; //D2
+		
 		ack_len = sizeof(traffic_split_ack);
 		linkCid = tsu->cid;
 
@@ -176,6 +180,80 @@ void vnic_tun_send_ctl_ack(struct sockaddr_in remote_addr, char *msg, int len)
 					client_info_arrays[array_index].tsu_wifi_split_size = tsu->K1 * split_factor;
 					client_info_arrays[array_index].tsu_lte_split_size = tsu->K2 * split_factor;
 					client_info_arrays[array_index].tsu_traffic_split_threshold = tsu->L1 * split_factor;
+
+
+					////////// insert per-link nrtflow OWD offset start
+					if (ENABLE_DL_OWD_OFFSET) 
+					{
+					int clientId = array_index + 2;
+					int wifiNrtFlowBit = 24576;
+					int lteLinkBit = 32768;
+					int lteNrtFlowBit = 57344;
+					std::stringstream ss;
+					int wifi_owd_tmp;
+					int lte_owd_tmp;
+					
+					if (tsu->D1 == 255) 
+					{
+						if( (g_time_param_s > client_info_arrays[array_index].last_recv_tsu_owd_time + 30)) 
+						{
+							if (client_info_arrays[array_index].wifi_owd_offset > 0)
+							{
+								vack->D1 = (u_char)((256 - client_info_arrays[array_index].wifi_owd_offset) & 0x000000FF); //-128 ~ 127 
+								client_info_arrays[array_index].wifi_owd_offset = 0;
+								ss.str(std::string());
+								ss << "tc qdisc change dev " << wlan_interface << " parent " << std::hex << (wifiNrtFlowBit + clientId) << std::dec << ":1 netem delay " << client_info_arrays[array_index].wifi_owd_fixed << "ms";
+								popen_no_msg(ss.str().c_str(), ss.str().size());
+							}
+							if (client_info_arrays[array_index].lte_owd_offset > 0)
+							{
+								vack->D2 = (u_char)((256 - client_info_arrays[array_index].wifi_owd_offset) & 0x000000FF);
+								client_info_arrays[array_index].lte_owd_offset = 0; 
+								ss.str(std::string());
+								ss << "tc qdisc change dev " << net_cfg.lte_interface << " parent " << std::hex << (lteNrtFlowBit + clientId) << std::dec << ":1 netem delay " << client_info_arrays[array_index].lte_owd_fixed << "ms";
+								popen_no_msg(ss.str().c_str(), ss.str().size());
+							}
+						}
+
+					}
+					else 
+					{
+							
+							if(( tsu->D1 > 0 || tsu->D2 > 0 ) && (g_time_param_s > client_info_arrays[array_index].last_recv_tsu_owd_time + 10))
+							{
+								client_info_arrays[array_index].last_recv_tsu_owd_time = g_time_param_s;
+								u_int old_lte_owd_offset  = client_info_arrays[array_index].lte_owd_offset ;
+								u_int old_wifi_owd_offset  = client_info_arrays[array_index].wifi_owd_offset ;
+								client_info_arrays[array_index].wifi_owd_offset = client_info_arrays[array_index].wifi_owd_offset + (u_int) tsu->D1;
+								client_info_arrays[array_index].lte_owd_offset = client_info_arrays[array_index].lte_owd_offset + (u_int) tsu->D2;
+								u_int tmp_x = std::min(client_info_arrays[array_index].lte_owd_offset, client_info_arrays[array_index].wifi_owd_offset);
+								if (tmp_x > 0) 
+								{
+								 client_info_arrays[array_index].lte_owd_offset  = client_info_arrays[array_index].lte_owd_offset  - tmp_x;
+								 client_info_arrays[array_index].wifi_owd_offset  = client_info_arrays[array_index].wifi_owd_offset  - tmp_x;	
+								}
+								
+								vack->D1 = (u_char)((client_info_arrays[array_index].wifi_owd_offset + 256 - old_wifi_owd_offset) & 0x000000FF); //-128 ~ 127 
+								vack->D2 = (u_char)((client_info_arrays[array_index].lte_owd_offset + 256 - old_lte_owd_offset ) & 0x000000FF);
+																
+								wifi_owd_tmp = (int)(client_info_arrays[array_index].wifi_owd_fixed + client_info_arrays[array_index].wifi_owd_offset);
+								ss.str(std::string());
+								ss << "tc qdisc change dev " << wlan_interface << " parent " << std::hex << (wifiNrtFlowBit + clientId) << std::dec << ":1 netem delay " << wifi_owd_tmp << "ms";
+								popen_no_msg(ss.str().c_str(), ss.str().size());
+
+								lte_owd_tmp = (int)(client_info_arrays[array_index].lte_owd_fixed + client_info_arrays[array_index].lte_owd_offset);
+								ss.str(std::string());
+								ss << "tc qdisc change dev " << net_cfg.lte_interface << " parent " << std::hex << (lteNrtFlowBit + clientId) << std::dec << ":1 netem delay " << lte_owd_tmp << "ms";
+								popen_no_msg(ss.str().c_str(), ss.str().size());
+
+								printf("\n debug tmp_x %u, wifi_fix %u, lte_fix %u, wifi offset %u, lte offset %u , D1(TSU): %u, D2(TSU): %u, D1(TSA): %u, D2(TSA):%u ", tmp_x, client_info_arrays[array_index].wifi_owd_fixed, 
+								client_info_arrays[array_index].lte_owd_fixed, client_info_arrays[array_index].wifi_owd_offset , client_info_arrays[array_index].lte_owd_offset, tsu->D1, tsu->D2,
+								vack->D1,vack->D2);
+							}
+							
+					}
+					}
+					//////// insert per-link nrtflow OWD offset end
 			}
 			else
 			{

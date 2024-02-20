@@ -206,8 +206,8 @@ public:
     struct sockaddr_in lteServer;
     int seqNum = 0;
     int nextRecvTSASeqNum = 0;
-    static const int buf_size = 77;
-    static const int plaintext_size = 45;
+    static const int buf_size = 79;  //old 77 and new 79
+    static const int plaintext_size = 47; //old 45 new: 47
     unsigned char buf[buf_size];
     unsigned char plainText[plaintext_size];
     int tsu_success_flag = 0;

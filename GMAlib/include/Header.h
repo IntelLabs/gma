@@ -240,7 +240,9 @@ public:
     unsigned char getFlowID2();
     unsigned char getStartLsn2();
     int getStartSn2();
-
+    int getWiFiTxOffset();
+    int getLteTxOffset();
+    
 };
 
 

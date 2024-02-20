@@ -4,7 +4,7 @@ Generic Multi-Access (GMA) Network Virtualization is a client/server-based softw
 
 ## OS
 
-ubuntu 22.04 64bit
+ubuntu22.04 64bit
 
 ## HW and Network Configuration (for a simple two-node setup)
 
@@ -29,7 +29,11 @@ Download the following three folders from this repo to the GMA server:
 
 ## Step 2: download "gmaclient" source files on GMA client 
 
-Download both folders ("GMAlib" and "client") from this repo 
+Download the following two folders from this repo to the GMA client:  
+
+    ./GMAlib
+	./client
+   	
 
 ## Step 3: install required libraries and tools on GMA client
 
@@ -100,16 +104,13 @@ Modify the parameters in confi.ini: "RT_FLOW_DSCP", "HR_FLOW_DSCP" according to 
 	RT_FLOW_DSCP = 2
 	HR_FLOW_DSCP = 1
 
-Downlink packets with DSCP = 2 are classified as the "Real-Time" flow using the steering mode, and those with DSCP = 1 are classified as the "High-Reliability" flow using the duplication mode, and all other packets are classified as the "Non Real-Time (Best Effort)" flow using the splitting mode. For example, the following commands set and unset DSCP to "1" for all downlink UDP flows to 10.8.0.9 respectively: 
-
-	sudo iptables -t mangle -A OUTPUT -d 10.8.0.9 -p udp -j TOS --set-tos 1
-	sudo iptables -t mangle -D OUTPUT -d 10.8.0.9 -p udp -j TOS --set-tos 1
+Downlink packets with DSCP = 2 are classified as the "Real-Time" flow using the steering mode, and those with DSCP = 1 are classified as the "High-Reliability" flow using the duplication mode, and all other packets are classified as the "Non Real-Time (Best Effort)" flow using the splitting mode.
 
 Set ENABLE_DL_QOS_CONFIG to "1" to enable downlink traffic shapping (optional)
 
 Use the tfc command in step 15 to configure uplink flows. Notice that uplink "Non Real-Time" flow uses the steering mode because the splitting mode is only supported for downlink in this release.  
 
-![GMA Testbed](https://github.com/IntelLabs/gma/blob/development/GMA-testbed.png)
+![GMA Testbed](https://github.com/IntelLabs/gma/blob/master/GMA-testbed.png)
 
 ## Step 9: create a new SSL certificate on GMA server
 
@@ -176,7 +177,7 @@ modify the following parameters in config.txt (under ./client):
 
 	SERVER_DNS=gmaserver.apps.local
 
-(wlan0: network interface for wifi, wwan0: network interface for cellular, gmaserver.apps.local: local DNS name for GMA service running at Edge, a.b.c.d is the IP address (e.g. 192.168.1.a at Step 8) at the GMA server via LTE)
+(wlan0: network interface for wifi, wwan0: network interface for cellular, gmaserver.apps.local: local DNS name for GMA service running at Edge, a.b.c.d is the (GMA service) IP address at the edge node via LTE)
 
 sudo mkdir /home/gmaclient
 
@@ -186,22 +187,12 @@ sudo cp ./config.txt /home/gmaclient/
 
 cd ./client
 
-run the followng command to add the default route via Wi-Fi or LTE if it is not present
-
-    sudo ip route add default via 192.168.1.a dev wwan0 metric 7001
-
-    sudo ip route add default via 192.168.0.b dev wlan0 metric 7000
-
 sudo ./gmaclient
 
 ## Step 15: start "gmactrl" on GMA server
 
 
 cd ./ctrl
-
-Modify the parameters in Params_config.txt according to your local environment: 
-
-     SERVER_IP_CONIFG=192.168.3.c
 
 sudo ./gmactl 
 
@@ -243,15 +234,17 @@ Traffic Flow Configuration: tfc [clientIndex] [flowId] [protoType] [portStart] [
 
 run the following command to control (downlink) traffic shaping for a GMA client: 
 
-Traffic Rate Configuration: txc [clientIndex] [Link] [R] [Q] [Delay]
+Traffic Rate Configuration: txc [clientIndex] [Link] [R] [Latency] [D]
 
                clientIndex: the last two bytes of the client IP address
                Link:
                  0: WiFi 
                  1: LTE
+                 2: enable DL OWD offset 
+                 3: disable DL OWD offset  
                R: the maximum (per-client & per-link) tx rate (Mbps)
-               Q: the Tx queue length (pkts) for real-time (RT) flow
-               Delay: the one-way delay (ms) added to downlink NRT flow
+               Latency: the TC traffic shapping latency (ms) (https://man7.org/linux/man-pages/man8/tc-tbf.8.html)
+               D: the fixed OWD of the link (ms)
 
 ## Testcases & Examples
 

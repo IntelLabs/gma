@@ -53,6 +53,7 @@ typedef enum RECEIVE_CONFIG_INDEX
 	MEASURE_INTERVAL_S_CONFIG_INDEX,
 	SERVER_REPORT_CYCLE_CONFIG_INDEX,
 	ENABLE_DL_QOS_CONFIG_INDEX,
+	ENABLE_DL_OWD_OFFSET_CONFIG_INDEX,
 	ENABLE_MEASUREMENT_CONFIG_INDEX,
 	ENABLE_MEASURE_REPORT_CONFIG_INDEX,
 	ENABLE_UL_REORDERING_CONFIG_INDEX,
@@ -175,6 +176,7 @@ extern u_short LTE_TCP_KEEP_ALIVE_S; //for setup the LTE tcp socket.
 extern u_short MEASURE_INTERVAL_S; // the interval to report measurement results, unit seconds.
 extern u_short SERVER_REPORT_CYCLE; // the interval to compute average or max of measure results.
 extern bool ENABLE_DL_QOS; //enable qos queues, based on HTB qdiscs
+extern bool ENABLE_DL_OWD_OFFSET; //enable qos queues, based on HTB qdiscs
 extern bool ENABLE_MEASUREMENT; //enable uplink measurements.
 extern bool ENABLE_MEASURE_REPORT; //print measurements
 extern bool ENABLE_UL_REORDERING; //If it is false, we won’t do any reordering for uplink traffic or allocate any (per-client) reordering buffer. 

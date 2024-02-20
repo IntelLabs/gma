@@ -537,7 +537,7 @@ void TrafficSplitAck::init(unsigned char *data, int offset)
 {
     mData = data;
     mOffset = offset;
-}
+ }
 
 unsigned char TrafficSplitAck::getType()
 {
@@ -560,7 +560,10 @@ int TrafficSplitAck::getAckNum()
 }
 int TrafficSplitAck::getTimeStampMillis()
 {
-    return ((unsigned int)(mData[mOffset + 8]) << 24 | (unsigned int)(mData[mOffset + 9]) << 16 | (unsigned int)(mData[mOffset + 10]) << 8 | (unsigned int)(mData[mOffset + 11]));
+
+    int x = (int)(mData[mOffset + 8]) << 24 | (int)(mData[mOffset + 9]) << 16 | (int)(mData[mOffset + 10]) << 8 | (int)(mData[mOffset + 11]); 
+    //printf("\n **** TSA Timestamp %d \n", x);
+    return (x);
 }
 
 unsigned char TrafficSplitAck::getFlowID1()
@@ -575,7 +578,29 @@ unsigned char TrafficSplitAck::getStartLsn1()
 
 int TrafficSplitAck::getStartSn1()
 {
-    return ((unsigned int)(mData[mOffset + 14]) << 16 | (unsigned int)(mData[mOffset + 15]) << 8 | (unsigned int)(mData[mOffset + 16]));
+    int x = (int)(mData[mOffset + 14]) << 16 | (int)(mData[mOffset + 15]) << 8 | (int)(mData[mOffset + 16]); 
+    //printf("\n **** TSA Start SN %d \n", x);
+    return (x);
+}
+
+int TrafficSplitAck::getWiFiTxOffset() //D1
+{
+    u_char x = mData[mOffset + 17];
+    if (x < 128)
+      return ((int)x);
+    else
+      return ((int)x - 256);
+    
+}
+
+int TrafficSplitAck::getLteTxOffset() //D2    -128 ~ 127
+{
+    u_char x = mData[mOffset + 18];
+    if (x < 128)
+      return ((int)x);
+    else
+      return ((int)x - 256);
+    
 }
 
 unsigned char TrafficSplitAck::getFlowID2()

@@ -372,11 +372,14 @@ void DataReceive::receiveWifiControl(char *packet)
                 //measurement cycle not started yet and the receive TSA sequence is bigger than last one
                 measurementManager.measureCycleStart(vnicTSA.getStartSn1()); //start next measurement cycle from start-Sn
             }
-
-        if (p_systemStateSettings->gStartTime >= 0)
+        
+        p_systemStateSettings->wifiOwdOffset = p_systemStateSettings->wifiOwdOffset + vnicTSA.getWiFiTxOffset() - vnicTSA.getLteTxOffset(); 
+			
+	    
+        int wifiowd = p_systemStateSettings->currentTimeMs - vnicTSA.getTimeStampMillis();
+            
+        if (p_systemStateSettings->gStartTime >= 0 && abs(wifiowd) < 10000)
         {
-            int wifiowd = p_systemStateSettings->currentTimeMs - vnicTSA.getTimeStampMillis();
-            //   Log.v("wifi tsa owd (ms)",":" + Integer.toString(wifiowd));
             (measurementManager.wifi)->updateLastPacketOwd(wifiowd);
         }
         break;
@@ -622,9 +625,12 @@ void DataReceive::receiveLteControl(char *packet)
             {
                 measurementManager.measureCycleStart(vnicTSA.getStartSn1()); //start next measurement cycle from start-Sn
             }
-        if (p_systemStateSettings->gStartTime >= 0)
+
+        p_systemStateSettings->wifiOwdOffset = p_systemStateSettings->wifiOwdOffset + vnicTSA.getWiFiTxOffset() - vnicTSA.getLteTxOffset(); 
+
+        int lteowd = p_systemStateSettings->currentTimeMs - vnicTSA.getTimeStampMillis();
+        if (p_systemStateSettings->gStartTime >= 0 && abs(lteowd) < 10000)
         {
-            int lteowd = p_systemStateSettings->currentTimeMs - vnicTSA.getTimeStampMillis();
             (measurementManager.lte)->updateLastPacketOwd(lteowd);
         }
         break;

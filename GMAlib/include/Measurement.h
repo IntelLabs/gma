@@ -39,7 +39,7 @@ public:
     long sumOwdPerInterval = 0; // sum of (OWD per packet), unit ms
     int minOwdPerInterval = INT_MAX;
     int maxOwdPerInterval = INT_MIN;
-
+	
     int numOfPacketsPerInterval = 0; // number of packets including data and control
     int numOfDataPacketsPerInterval = 0;
 
@@ -90,6 +90,7 @@ private:
 	bool measureIntervalStarted = false; // true stands for a measurement interval is tarted
 	int measureIntervalIndex = 0; // current measure interval index
 	long measureIntervalStartTime = 0;
+	long lastOwdUpdateTime = 0;
 	long measureIntervalDuration;
 public:
 	MeasurementManager();

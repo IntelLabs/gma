@@ -1441,51 +1441,31 @@ void SendMRPMsg::Execute()
 				p_systemStateSettings->HRreorderingTimeout = avg_RtlteOwd + p_systemStateSettings->MIN_MAXREORDERINGDELAY;
 			*/
 			
-			if (p_systemStateSettings->wifiPacketNum == 0)
-				p_systemStateSettings->wifiOwdMax = 0;
-			if (p_systemStateSettings->ltePacketNum == 0)
-				p_systemStateSettings->lteOwdMax = 0;
+			
 			if (p_systemStateSettings->wifiRtPacketNum == 0)
 				p_systemStateSettings->wifiRtOwdMax = 0;
 			if (p_systemStateSettings->lteRtPacketNum == 0)
 				p_systemStateSettings->lteRtOwdMax = 0;
 
-			int owd_diff_lte_to_wifi = p_systemStateSettings->lteOwdMax - p_systemStateSettings->wifiOwdMin;
-			int owd_diff_wifi_to_lte = p_systemStateSettings->wifiOwdMax - p_systemStateSettings->lteOwdMin;
-			if (owd_diff_lte_to_wifi > owd_diff_wifi_to_lte)
-				p_systemStateSettings->maxReorderingDelay = owd_diff_lte_to_wifi + 20;
-			else
-				p_systemStateSettings->maxReorderingDelay = owd_diff_wifi_to_lte + 20;
-
-
-			owd_diff_lte_to_wifi = p_systemStateSettings->lteRtOwdMax - p_systemStateSettings->wifiRtOwdMin;
-			owd_diff_wifi_to_lte = p_systemStateSettings->wifiRtOwdMax - p_systemStateSettings->lteRtOwdMin;
+			int owd_diff_lte_to_wifi = p_systemStateSettings->lteRtOwdMax - p_systemStateSettings->wifiRtOwdMin;
+			int owd_diff_wifi_to_lte = p_systemStateSettings->wifiRtOwdMax - p_systemStateSettings->lteRtOwdMin;
 
 			if (owd_diff_lte_to_wifi > owd_diff_wifi_to_lte)
-				p_systemStateSettings->HRreorderingTimeout = owd_diff_lte_to_wifi  + 20 ;
+					p_systemStateSettings->HRreorderingTimeout = owd_diff_lte_to_wifi  + 20 ;
 			else
-				p_systemStateSettings->HRreorderingTimeout = owd_diff_wifi_to_lte  + 20;
+					p_systemStateSettings->HRreorderingTimeout = owd_diff_wifi_to_lte  + 20;
 
-
-			if (p_systemStateSettings->maxReorderingDelay < p_systemStateSettings->MIN_MAXREORDERINGDELAY)
-			  p_systemStateSettings->maxReorderingDelay = p_systemStateSettings->MIN_MAXREORDERINGDELAY;
-			else if (p_systemStateSettings->maxReorderingDelay > p_systemStateSettings->MAX_MAXREORDERINGDELAY)
-			  p_systemStateSettings->maxReorderingDelay = p_systemStateSettings->MAX_MAXREORDERINGDELAY;
-			
 			if (p_systemStateSettings->HRreorderingTimeout < p_systemStateSettings->MIN_MAXREORDERINGDELAY)
-			  p_systemStateSettings->HRreorderingTimeout = p_systemStateSettings->MIN_MAXREORDERINGDELAY;
+				p_systemStateSettings->HRreorderingTimeout = p_systemStateSettings->MIN_MAXREORDERINGDELAY;
 			else if (p_systemStateSettings->HRreorderingTimeout > p_systemStateSettings->MAX_MAXREORDERINGDELAY)
-			  p_systemStateSettings->HRreorderingTimeout = p_systemStateSettings->MAX_MAXREORDERINGDELAY;
-			
+				p_systemStateSettings->HRreorderingTimeout = p_systemStateSettings->MAX_MAXREORDERINGDELAY;
+				
 			p_systemStateSettings->GMAIPCMessage(16, p_systemStateSettings->HRreorderingTimeout, p_systemStateSettings->maxReorderingDelay, false, 0); //update reordering timer
+
 
 			ss.str("");
 			ss << "GMA measurements: Reordering Timer nrt" << p_systemStateSettings->maxReorderingDelay << " hr: " << p_systemStateSettings->HRreorderingTimeout << std::endl;
 			p_systemStateSettings->PrintLogs(ss);
-			p_systemStateSettings->wifiOwdSum = 0;
-			p_systemStateSettings->wifiPacketNum = 0;
-			p_systemStateSettings->wifiOwdMax = INT_MIN;
-			p_systemStateSettings->wifiOwdMin = INT_MAX;
 			p_systemStateSettings->wifiInorderPacketNum = 0;
 			p_systemStateSettings->wifiMissingPacketNum = 0;
 			p_systemStateSettings->wifiAbnormalPacketNum = 0;
@@ -1498,10 +1478,6 @@ void SendMRPMsg::Execute()
 			p_systemStateSettings->wifiRtMissingPacketNum = 0;
 			p_systemStateSettings->wifiRtAbnormalPacketNum = 0;
 
-			p_systemStateSettings->lteOwdSum = 0;
-			p_systemStateSettings->ltePacketNum = 0;
-			p_systemStateSettings->lteOwdMax = INT_MIN;
-			p_systemStateSettings->lteOwdMin = INT_MAX;
 			p_systemStateSettings->lteInorderPacketNum = 0;
 			p_systemStateSettings->lteMissingPacketNum = 0;
 			p_systemStateSettings->lteAbnormalPacketNum = 0;
@@ -1738,11 +1714,12 @@ int SendMRPMsg::BuildMeasureReportElement(unsigned char *buf, int offset)
 			buf[offset + rtOffset + 24] = (unsigned char)((p_systemStateSettings->lteOwdMax - p_systemStateSettings->lteOwdMin) & 0x0000007F); //lte OWD range(ms)
 		}
 
+/*
 		if (p_systemStateSettings->wifiOwdMin != INT_MAX && p_systemStateSettings->lteOwdMin != INT_MAX)
 		    p_systemStateSettings->wifiOwdOffset = p_systemStateSettings->wifiOwdMin - p_systemStateSettings->lteOwdMin;
 		else
 		    p_systemStateSettings->wifiOwdOffset = 0;
-	
+*/	
 
 	    //(NRT4) ave owd diff wifi- lte
 		if (p_systemStateSettings->wifiPacketNum < p_systemStateSettings->minPktsample || p_systemStateSettings->ltePacketNum < p_systemStateSettings->minPktsample)
@@ -1979,6 +1956,12 @@ void SendMRPMsg::PrepareMeasureReport()
 			p_systemStateSettings->GMAIPCMessage(2,0,0,false,0); //controlManager.sendWifiProbe(); //sendWifiProbeMsg.sendWifiProbe();
 			//sendWifiProbe(); //probing to check if Wi-Fi is connected
 		}
+
+		if (p_systemStateSettings->wifiSplitFactor == 0 || p_systemStateSettings->lteSplitFactor == 0) //send TSU to reset TX OWD offset
+		{
+			p_systemStateSettings->GMAIPCMessage(1,0,0,false,0); //controlManager.sendTSUMsg();
+		}
+
 	}
 
 	if (p_systemStateSettings->gLteFlag && p_systemStateSettings->lteRssiMeasurement == 1)
@@ -2229,13 +2212,9 @@ void SendTSUMsg::trafficSplitingUpdate()
 {
 	int size = 0;
 	int linkFlag = 0; //2: wifi; 1: lte;
-	while (size < 8 && tsu_success_flag == 0)
-	{ //transmit up to 3 times
-		seqNum = p_systemStateSettings->controlMsgSn;
-		p_systemStateSettings->controlMsgSn = (p_systemStateSettings->controlMsgSn + 1) & 0x0000FFFF; //2bytes
-		plainText[28] = (unsigned char)5;														//type
-
-		if (p_systemStateSettings->gIsWifiConnect && wifiSplitFactor > 0 && lteSplitFactor == 0)
+		
+	plainText[28] = (unsigned char)5;														//type
+	if (p_systemStateSettings->gIsWifiConnect && wifiSplitFactor > 0 && lteSplitFactor == 0)
 		{
 			plainText[29] = (unsigned char)0;
 		}
@@ -2256,9 +2235,7 @@ void SendTSUMsg::trafficSplitingUpdate()
 		plainText[31] = (unsigned char)((p_systemStateSettings->key & 0x00FF0000) >> 16);
 		plainText[32] = (unsigned char)((p_systemStateSettings->key & 0x0000FF00) >> 8);
 		plainText[33] = (unsigned char)(p_systemStateSettings->key & 0x000000FF); //key
-		plainText[34] = (unsigned char)((seqNum & 0xff00) >> 8);
-		plainText[35] = (unsigned char)(seqNum & 0x00ff); //seq num
-
+		
 		int linkBitmap = p_systemStateSettings->GetLinkBitmap();
 		plainText[36] = (unsigned char)linkBitmap;								   //first bit is wifi, second bit for lte
 		plainText[37] = (unsigned char)p_systemStateSettings->nonRealtimelModeFlowId; //flow id
@@ -2268,8 +2245,37 @@ void SendTSUMsg::trafficSplitingUpdate()
 		plainText[41] = (unsigned char)p_systemStateSettings->realtimeModeFlowId;													 //FLOW ID2											 //flow id
 		plainText[42] = (unsigned char)(p_systemStateSettings->gDLAllOverLte || p_systemStateSettings->gDlRToverLteFlag == 1 ? 0 : 1); //K1
 		plainText[43] = (unsigned char)(p_systemStateSettings->gDLAllOverLte || p_systemStateSettings->gDlRToverLteFlag == 1 ? 1 : 0); //K2
-		plainText[44] = (unsigned char)1;																						 //L
+		plainText[44] = (unsigned char)1;		
+		if (lteSplitFactor == 0 || wifiSplitFactor == 0) //reset OWD offset
+		{
+			plainText[45]  = 255;
+			plainText[46]  = 255;
+		}
+		else
+		{
 
+			if (p_systemStateSettings->wifiOwdTxOffset > 0 || p_systemStateSettings->lteOwdTxOffset > 0)	
+			{
+				plainText[45] = (unsigned char)p_systemStateSettings->wifiOwdTxOffset; //max = 250ms (1 Byte)
+				plainText[46] = (unsigned char)p_systemStateSettings->lteOwdTxOffset;
+				printf("\n OWD offset wifi:%u LTE: %u", plainText[45], plainText[46]);
+				p_systemStateSettings->wifiOwdTxOffset = 0;
+				p_systemStateSettings->lteOwdTxOffset = 0;
+			}
+			else
+			{
+				plainText[45]  = 0;
+				plainText[46]  = 0;
+			}
+		}
+		
+	
+	while (size < 8 && tsu_success_flag == 0)
+	{ //transmit up to 3 times
+		seqNum = p_systemStateSettings->controlMsgSn;
+		plainText[34] = (unsigned char)((seqNum & 0xff00) >> 8);
+		plainText[35] = (unsigned char)(seqNum & 0x00ff); //seq num
+		p_systemStateSettings->controlMsgSn = (p_systemStateSettings->controlMsgSn + 1) & 0x0000FFFF; //2bytes
 		try
 		{
 			if (p_systemStateSettings->enable_encryption)

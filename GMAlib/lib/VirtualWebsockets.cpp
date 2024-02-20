@@ -69,23 +69,18 @@ void VirtualWebsockets::sendResumeReq()
 
 void VirtualWebsockets::WsConnect()
 {
-        try
+        auto const results = resolver_->resolve(wsAddress, wsPort);
+        if (beast::get_lowest_layer(*v_ws).socket().is_open())
         {
-            auto const results = resolver_->resolve(wsAddress, wsPort);
-            beast::get_lowest_layer(*v_ws).socket().open(boost::asio::ip::tcp::v4());
-            beast::get_lowest_layer(*v_ws).connect(*results);
-            v_ws->next_layer().handshake(ssl::stream_base::client);
-            v_ws->handshake(wsAddress, "/");
+            beast::error_code ec;
+            beast::get_lowest_layer(*v_ws).socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+            beast::get_lowest_layer(*v_ws).socket().close();
         }
-        catch (boost::system::system_error const& e)
-        {
-
-            std::stringstream ss;
-            ss << "line 90" << e.what() << '\n';
-            p_systemStateSettings->PrintLogs(ss);
-        }
+        beast::get_lowest_layer(*v_ws).socket().open(boost::asio::ip::tcp::v4());
+        beast::get_lowest_layer(*v_ws).connect(*results);
+        v_ws->next_layer().handshake(ssl::stream_base::client);
+        v_ws->handshake(wsAddress, "/");
         threadBusy = false;
-
 }
 
 
@@ -96,29 +91,61 @@ void VirtualWebsockets::virtualWebsocketConnect(ptree message)
         return;
 
     connectServerRunning = true;
+    threadBusy = true;
+
     int k = 0;
     std::thread::native_handle_type wsConnID = 0;
     std::thread wsWsConnectThread;
-    threadBusy = true;
-    try {
+    
+    /*
+    while (k < 3 && threadBusy)
+    {
         wsWsConnectThread = std::thread(&VirtualWebsockets::WsConnect, this);
         wsConnID = wsWsConnectThread.native_handle();
-    }
-    catch (const std::system_error& e) {
-        connectServerRunning = false;
-        return;
-    }
-    k = 0;
-    while (k < 10 && threadBusy)
-    {
-        p_systemStateSettings->msleep(1000);
+        p_systemStateSettings->msleep(5000);
         k++;
     }
     if (threadBusy)
-        p_systemStateSettings->terminateThread(wsConnID);
+    {
+            connectServerRunning = false;
+            p_systemStateSettings->terminateThread(wsConnID);
+            threadBusy = false;
+            wsWsConnectThread.join();
+            return;
+    }
+    else
+    {
+            wsWsConnectThread.join();
+    }
+    */
+    try {
+        wsWsConnectThread = std::thread(std::bind(&VirtualWebsockets::WsConnect, this));
+        wsConnID = wsWsConnectThread.native_handle();
+        k = 0;
+        while (k < 10 && threadBusy)
+        {
+            p_systemStateSettings->msleep(1000);
+            k++;
+        }
+        if (threadBusy)
+        {
+            p_systemStateSettings->terminateThread(wsConnID);
+            wsWsConnectThread.join();    
+            connectServerRunning = false;
+            threadBusy = false;
+            printf("\n ***** virtual socket connect failure **** \n");
+            return;
+        }
+        wsWsConnectThread.join();
+    }
+    catch (const std::system_error& e) {
+        std::cout << "Caught system_error with code " << e.code()
+            << " meaning " << e.what() << '\n';
+        connectServerRunning = false;
+        threadBusy = false;
+        return;
+    }
 
-    threadBusy = false;
-    wsWsConnectThread.join();
 
     std::stringstream ss;
     ss << "Prepare to build virtual websockets..#1..\n";

@@ -191,7 +191,8 @@ bool TrafficSplitting::delayBasedAlgorithm(int wifiOwd, int lteOwd)
 			update = true;
 		}
 	}
-	else if (p_systemStateSettings->TOLERANCE_DELAY_BOUND < lteOwd - wifiOwd)
+	//else if (p_systemStateSettings->TOLERANCE_DELAY_BOUND < lteOwd - wifiOwd)
+	else if (0  <= lteOwd - wifiOwd)
 	{
 		if (p_systemStateSettings->wifiIndexChangeAlpha <= 0)
 		{
@@ -241,7 +242,8 @@ bool TrafficSplitting::delayLossBasedAlgorithm(int wifiOwd, int lteOwd, int wifi
 			update = true;
 		}
 	}
-	else if (p_systemStateSettings->TOLERANCE_DELAY_BOUND < lteOwd - wifiOwd)
+	//else if (p_systemStateSettings->TOLERANCE_DELAY_BOUND < lteOwd - wifiOwd)
+	else if (0  <= lteOwd - wifiOwd)
 	{
 		if (p_systemStateSettings->wifiIndexChangeAlpha <= 0)
 		{
@@ -328,7 +330,7 @@ bool TrafficSplitting::congestionBasedAlgorithm(int wifiPackets, int ltePackets,
 		{
 			//utilization > threshold or  loss rate higher than limit, use delay based algorithm
 			//trigger to send LTE probe for OWD measurements if the last probe is 10 seconds ago
-			if (p_systemStateSettings->currentSysTimeMs - p_systemStateSettings->lastReceiveLteProbe > 30000)
+			if (p_systemStateSettings->currentSysTimeMs - p_systemStateSettings->lastReceiveLteProbe > 5000)
 			{
 				p_systemStateSettings->GMAIPCMessage(3,0,0,false,0); //controlManager.sendLteProbe();
 			}
@@ -507,7 +509,8 @@ void MeasurementManager::measureIntervalEndCheck(long currentTimeMs)
 						p_systemStateSettings->wifiSplitFactor = p_systemStateSettings->paramL;
 						p_systemStateSettings->lteSplitFactor = 0;
 						p_systemStateSettings->GMAIPCMessage(1,0,0,false,0); //controlManager.sendTSUMsg();
-						p_systemStateSettings->numOfTsuMessages++;
+  						p_systemStateSettings->numOfTsuMessages++;
+
 					}
 				}
 			}
@@ -542,6 +545,7 @@ void MeasurementManager::measureIntervalEndAbnormal(long currenTimeMs)
 		p_systemStateSettings->ltePacketNum += lte->numOfPacketsPerInterval;
 		p_systemStateSettings->lteOwdMax = std::max(p_systemStateSettings->lteOwdMax, lte->maxOwdPerInterval);
 		p_systemStateSettings->lteOwdMin = std::min(p_systemStateSettings->lteOwdMin, lte->minOwdPerInterval);
+    
 	}
 
 	//update global variable
@@ -567,6 +571,7 @@ void MeasurementManager::measureIntervalEnd(long currentTimeMs)
 		p_systemStateSettings->wifiPacketNum += wifi->numOfPacketsPerInterval;
 		p_systemStateSettings->wifiOwdMax = std::max(p_systemStateSettings->wifiOwdMax, wifi->maxOwdPerInterval);
 		p_systemStateSettings->wifiOwdMin = std::min(p_systemStateSettings->wifiOwdMin, wifi->minOwdPerInterval);
+
 		//WiFi measurement available, update OWD
 		int wifiOwd = static_cast<int>(wifi->sumOwdPerInterval / wifi->numOfPacketsPerInterval);
 		if (wifiOwd != INT_MAX && wifi->lastIntervalOwd != INT_MAX)
@@ -582,6 +587,7 @@ void MeasurementManager::measureIntervalEnd(long currentTimeMs)
 		p_systemStateSettings->ltePacketNum += lte->numOfPacketsPerInterval;
 		p_systemStateSettings->lteOwdMax = std::max(p_systemStateSettings->lteOwdMax, lte->maxOwdPerInterval);
 		p_systemStateSettings->lteOwdMin = std::min(p_systemStateSettings->lteOwdMin, lte->minOwdPerInterval);
+    
 
 		//LTE measurement available, update OWD
 		int lteOwd = static_cast<int>(lte->sumOwdPerInterval / lte->numOfPacketsPerInterval);
@@ -647,6 +653,53 @@ void MeasurementManager::measureIntervalEnd(long currentTimeMs)
 
 	if (endMeasurement)
 	{
+
+            //update min Wi-Fi and LTE OWD for non-real-time traffic 
+			if (currentTimeMs - lastOwdUpdateTime > 10000) //10 seconds
+			{
+				lastOwdUpdateTime = currentTimeMs;
+				int max_minOwdPerCycle = std::max(p_systemStateSettings->wifiOwdMin, p_systemStateSettings->lteOwdMin);
+				if (max_minOwdPerCycle < 1000) 
+				{
+					p_systemStateSettings->wifiOwdTxOffset = std::min(250, max_minOwdPerCycle - p_systemStateSettings->wifiOwdMin); //max = 250ms (1 Byte)
+					p_systemStateSettings->lteOwdTxOffset = std::min(250,  max_minOwdPerCycle - p_systemStateSettings->lteOwdMin); //max = 250ms (1 Byte)
+					p_systemStateSettings->wifiOwdOffset = p_systemStateSettings->wifiOwdMin - p_systemStateSettings->lteOwdMin;
+					
+					
+					
+					int owd_diff_lte_to_wifi = p_systemStateSettings->lteOwdMax - p_systemStateSettings->wifiOwdMin;
+					int owd_diff_wifi_to_lte = p_systemStateSettings->wifiOwdMax - p_systemStateSettings->lteOwdMin;
+					if (owd_diff_lte_to_wifi > owd_diff_wifi_to_lte)
+						p_systemStateSettings->maxReorderingDelay = owd_diff_lte_to_wifi + 20;
+					else
+						p_systemStateSettings->maxReorderingDelay = owd_diff_wifi_to_lte + 20;
+
+
+					if (p_systemStateSettings->maxReorderingDelay < p_systemStateSettings->MIN_MAXREORDERINGDELAY)
+						p_systemStateSettings->maxReorderingDelay = p_systemStateSettings->MIN_MAXREORDERINGDELAY;
+					else if (p_systemStateSettings->maxReorderingDelay > p_systemStateSettings->MAX_MAXREORDERINGDELAY)
+						p_systemStateSettings->maxReorderingDelay = p_systemStateSettings->MAX_MAXREORDERINGDELAY;
+
+					p_systemStateSettings->GMAIPCMessage(16, p_systemStateSettings->HRreorderingTimeout, p_systemStateSettings->maxReorderingDelay, false, 0); //update reordering timer
+				
+				}
+				else
+				{
+					p_systemStateSettings->wifiOwdTxOffset = 0; 
+					p_systemStateSettings->lteOwdTxOffset = 0;
+					p_systemStateSettings->wifiOwdOffset = 0; 
+				}
+
+				p_systemStateSettings->wifiOwdMax = INT_MIN;
+				p_systemStateSettings->wifiOwdMin = INT_MAX;
+				p_systemStateSettings->lteOwdMax = INT_MIN;
+				p_systemStateSettings->lteOwdMin = INT_MAX;
+				p_systemStateSettings->wifiOwdSum = 0;
+				p_systemStateSettings->wifiPacketNum = 0;
+				p_systemStateSettings->lteOwdSum = 0;
+				p_systemStateSettings->ltePacketNum = 0;
+			}
+
 		measurementOn = false; // this will end a measurement cycle
 		if (INT_MAX == wifi->lastIntervalOwd)
 		{ //no owd measurement last interval, we set it to the last packet owd

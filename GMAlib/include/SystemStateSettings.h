@@ -186,6 +186,9 @@ public:
     int lteRtMissingPacketNum; //data only
     int lteRtAbnormalPacketNum; //data only
 
+    int wifiOwdTxOffset = 0; 
+    int lteOwdTxOffset = 0;
+
     //when resetting wifi/lteSplitFactor, please make sure the sum of these two equals paramL
     //and also reset wifiIndexChangeAlpha to 0
     int wifiSplitFactor; // k1 wifi

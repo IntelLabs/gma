@@ -171,6 +171,7 @@ SystemStateSettings::SystemStateSettings()
     wifiRtOwdMax = INT_MIN;
     wifiRtOwdMin = INT_MAX;
 
+
     lteRtOwdSum = 0;    //control and data
     lteRtPacketNum = 0; //control and data
     lteRtOwdMax = INT_MIN;
@@ -325,7 +326,6 @@ void SystemStateSettings::updateSystemSettings()
     wifiMissingPacketNum = 0;  //data only
     wifiAbnormalPacketNum = 0; //data only
     wifiRate = 100;            //data only
-
     //ENABLE_FLOW_MEASUREMENT = true;
     flowInorderPacketNum = 0;  //data only
     flowMissingPacketNum = 0;  //data only
