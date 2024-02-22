@@ -1,3 +1,15 @@
+## GMA virtual network configuration in conf.ini 
+
+[SERVER_PARAMETERS]
+
+SERVER_VNIC_IP: the first IP address assigned to a GMA client for the virtual "tun" interface
+
+SERVER_VNIC_GW: the IP address of the virtual network interface at the GMA server
+
+SERVER_VNIC_MSK: the subnet mask of the virtual network interface
+
+SERVER_VNIC_DNS: the DNS server IP address of the virtual network interface 
+
 ## GMA server port definition in conf.ini 
 
 [NCM]
