@@ -2,11 +2,11 @@
 
 [NCM]
 
-port: local TCP socket for ncm_ws38.py (./gma/python) to communicate with gmaserver (./gma/server)
+port: internal UDP socket for ncm_ws38.py (./gma/python) to communicate with gmaserver (./gma/server)
 
 [SERVER]
 
-port: local TCP socket for gmaserver to communicate with ncm_ws38.py
+port: internal UDP socket for gmaserver to communicate with ncm_ws38.py
 
 [WEBSOCK]
 
@@ -31,4 +31,4 @@ MEASURE_REPORT_PORT = internal UDP socket for gmaserver to communicate with gmac
 
 # Note
 
-*: **All public ports must be accessible from Internet through the corresponding interface (wifi or lte)**   
+*: **All public ports must be accessible from GMA client through the corresponding interface (wifi or lte)**   
