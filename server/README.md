@@ -24,7 +24,7 @@ virtual_port: internal TCP socket for ncm_ws38.py to communicate with a GMA clie
 
 UDP_PORT: internal UDP socket for gmaserver to communicate with a GMA client through the virtual ("tun") interface 
 
-**TCP_PORT** = public TCP socket for gmaserver to send "keep-alive" messages to GMA client through the "wifi" or "lte" interface
+**TCP_PORT**: public TCP socket for gmaserver to send "keep-alive" messages to GMA client through the "wifi" or "lte" interface
 
 MEASURE_REPORT_PORT = internal UDP socket for gmaserver to communicate with gmactrl (./gma/ctrl) 
 
