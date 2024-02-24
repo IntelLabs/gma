@@ -97,7 +97,7 @@ void MeasureDevice::AddDataToBurstRateEstimate(int owdMs)
 
 void MeasureDevice::updateLastPacketOwd(int owdMs)
 {
-	if (owdMs < 10000)
+	if (abs(owdMs) < 10000)
 	{ //only update OWD smaller than 10 s
 		if (0 == numOfPacketsPerInterval % p_systemStateSettings->BURST_SAMPLE_FREQUENCY)
 		{
@@ -116,6 +116,7 @@ void MeasureDevice::updateLastPacketOwd(int owdMs)
 			maxOwdPerInterval = owdMs;
 		}
 	}
+
 }
 
 void MeasureDevice::updateLsn(short lastLsn)

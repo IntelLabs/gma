@@ -1339,11 +1339,15 @@ void SendMRPMsg::Execute()
 				wifi_avg_owd = (int)(p_systemStateSettings->wifiOwdSum / p_systemStateSettings->wifiPacketNum);
 			}
 
-			if (p_systemStateSettings->currentTimeMs > 0x0FFFFFFF || wifi_avg_owd < -1000 || wifi_avg_owd > 1000)
+			if (p_systemStateSettings->currentTimeMs > 0x00FFFFFF || p_systemStateSettings->wifiOwdMax > 1000 || p_systemStateSettings->lteOwdMax > 1000 || p_systemStateSettings->wifiOwdMin < -1000 || p_systemStateSettings->lteOwdMin < -1000 )
 			{ //sync again every 74 hours
 				p_systemStateSettings->mHandler(2);
 				ss << "wifi_avg_owd:" << wifi_avg_owd << " Sync Again!\n"; //mhandler.sendEmptyMessage(2);
 				p_systemStateSettings->PrintLogs(ss);
+				p_systemStateSettings->wifiOwdMax = INT_MIN;
+				p_systemStateSettings->wifiOwdMin = INT_MAX;
+				p_systemStateSettings->lteOwdMax = INT_MIN;
+				p_systemStateSettings->lteOwdMin = INT_MAX;
 			}
 
 
