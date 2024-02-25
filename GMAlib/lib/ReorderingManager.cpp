@@ -542,7 +542,7 @@ int ReorderingWorker::release_in_order_packets()
 					
 					if (timeout <= 0) 
 					{
-						if(HRreorderingTimeout < 1000) //increase timer up to 1 second 
+						if(queue_time > 0 && queue_time < 1000) //increase timer up to 1 second 
 							HRreorderingTimeout = queue_time + 20;
 
 						stringstream ss;

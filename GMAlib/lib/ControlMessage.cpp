@@ -1339,7 +1339,10 @@ void SendMRPMsg::Execute()
 				wifi_avg_owd = (int)(p_systemStateSettings->wifiOwdSum / p_systemStateSettings->wifiPacketNum);
 			}
 
-			if (p_systemStateSettings->currentTimeMs > 0x00FFFFFF || p_systemStateSettings->wifiOwdMax > 1000 || p_systemStateSettings->lteOwdMax > 1000 || p_systemStateSettings->wifiOwdMin < -1000 || p_systemStateSettings->lteOwdMin < -1000 )
+			int Dmax = 2000;
+			int Dmin = -2000;
+
+			if (p_systemStateSettings->currentTimeMs > 0x00FFFFFF || p_systemStateSettings->wifiOwdMax > Dmax || p_systemStateSettings->lteOwdMax > Dmax || p_systemStateSettings->wifiOwdMin < Dmin || p_systemStateSettings->lteOwdMin < Dmin )
 			{ //sync again every 74 hours
 				p_systemStateSettings->mHandler(2);
 				ss << "wifi_avg_owd:" << wifi_avg_owd << " Sync Again!\n"; //mhandler.sendEmptyMessage(2);
@@ -1399,11 +1402,7 @@ void SendMRPMsg::Execute()
 					   << " missing: " << p_systemStateSettings->flowMissingPacketNum
 					   << " abnormal: " << p_systemStateSettings->flowAbnormalPacketNum << std::endl;
 					p_systemStateSettings->PrintLogs(ss);
-					//bug 
-					/*
-					if (p_systemStateSettings->lteInorderPacketNum + p_systemStateSettings->wifiInorderPacketNum == 0)
-  						p_systemStateSettings->GMAIPCMessage(1, 0, 0, false, 0); //controlManager.sendTSUMsg();
-					*/
+		
 				}
 				p_systemStateSettings->flowInorderPacketNum = 0;
 				p_systemStateSettings->flowMissingPacketNum = 0;
@@ -1946,16 +1945,13 @@ void SendMRPMsg::PrepareMeasureReport()
 				return;
 			}
 		}
-		else if (!p_systemStateSettings->gScreenOnFlag && p_systemStateSettings->wifiRssi > p_systemStateSettings->wifiHighRssi && !p_systemStateSettings->gDLAllOverLte && p_systemStateSettings->gUlRToverLteFlag == 0 && p_systemStateSettings->gDlRToverLteFlag == 0 && p_systemStateSettings->gLteAlwaysOnFlag == 0 && p_systemStateSettings->gLteFlag && p_systemStateSettings->stopLterequest && p_systemStateSettings->gIsWifiConnect && currentTime - p_systemStateSettings->gLastScreenOffTime > 30 * 60 * 1000)
+		/*else if (!p_systemStateSettings->gScreenOnFlag && p_systemStateSettings->wifiRssi > p_systemStateSettings->wifiHighRssi && !p_systemStateSettings->gDLAllOverLte && p_systemStateSettings->gUlRToverLteFlag == 0 && p_systemStateSettings->gDlRToverLteFlag == 0 && p_systemStateSettings->gLteAlwaysOnFlag == 0 && p_systemStateSettings->gLteFlag && p_systemStateSettings->stopLterequest && p_systemStateSettings->gIsWifiConnect && currentTime - p_systemStateSettings->gLastScreenOffTime > 30 * 60 * 1000)
 		{
-		}
+		}*/
 	}
 	else
 	{
-		if (!p_systemStateSettings->gLteFlag)
-		{
-		}
-		else if (!p_systemStateSettings->gIsWifiConnect && p_systemStateSettings->gWifiFlag)
+		if (!p_systemStateSettings->gIsWifiConnect && p_systemStateSettings->gWifiFlag)
 		{
 			p_systemStateSettings->GMAIPCMessage(2,0,0,false,0); //controlManager.sendWifiProbe(); //sendWifiProbeMsg.sendWifiProbe();
 			//sendWifiProbe(); //probing to check if Wi-Fi is connected
@@ -1967,11 +1963,12 @@ void SendMRPMsg::PrepareMeasureReport()
 		}
 
 	}
-
+/*
 	if (p_systemStateSettings->gLteFlag && p_systemStateSettings->lteRssiMeasurement == 1)
 	{
 		//Lte rssi strength
 	}
+*/
 }
 
 void SendMRPMsg::UpdateWifiFd(GMASocket wifiFd, struct sockaddr_in wifiServerAddr)

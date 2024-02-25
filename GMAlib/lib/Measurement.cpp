@@ -184,7 +184,8 @@ bool TrafficSplitting::delayBasedAlgorithm(int wifiOwd, int lteOwd)
 		{
 			p_systemStateSettings->wifiIndexChangeAlpha = -1;
 		}
-		if (wifiOwd >= lastDecisionWifiOwd && lastWifiIndex > 0)
+		//if (wifiOwd >= lastDecisionWifiOwd && lastWifiIndex > 0)
+		if (lastWifiIndex > 0)
 		{
 			lastWifiIndex += std::min(-1, p_systemStateSettings->wifiIndexChangeAlpha + p_systemStateSettings->STEP_ALPHA_THRESHOLD);
 			p_systemStateSettings->wifiIndexChangeAlpha -= 1;
@@ -199,7 +200,8 @@ bool TrafficSplitting::delayBasedAlgorithm(int wifiOwd, int lteOwd)
 		{
 			p_systemStateSettings->wifiIndexChangeAlpha = 1;
 		}
-		if (lteOwd >= lastDecisionlteOwd && lastWifiIndex < p_systemStateSettings->paramL)
+		//if (lteOwd >= lastDecisionlteOwd && lastWifiIndex < p_systemStateSettings->paramL)
+		if (lastWifiIndex < p_systemStateSettings->paramL)
 		{
 			lastWifiIndex += std::max(1, p_systemStateSettings->wifiIndexChangeAlpha - p_systemStateSettings->STEP_ALPHA_THRESHOLD);
 			p_systemStateSettings->wifiIndexChangeAlpha += 1;
@@ -455,6 +457,17 @@ bool MeasurementManager::measureIntervalStartConditionCheck(int x)
 	return (rollOverDiff2(lastSn, measureStartSn, 16777216) >= 0 && !measureIntervalStarted);
 }
 
+
+bool MeasurementManager::restart(long currentTimeMs)
+{
+	if (currentTimeMs < measureIntervalEndTime || currentTimeMs - measureIntervalEndTime > 1000)
+		return(true);
+	else
+		return(false);
+
+}
+
+
 void MeasurementManager::measureIntervalStart(long currentTimeMs)
 {
 	measureIntervalStarted = true;
@@ -559,11 +572,13 @@ void MeasurementManager::measureIntervalEndAbnormal(long currenTimeMs)
 	p_systemStateSettings->lteAbnormalPacketNum += lte->numOfAbnormalPacketsPerCycle;
 
 	measureCycleStart(lastSn); //restart a new measurement
+	measureIntervalEndTime = currenTimeMs;
 }
 
 void MeasurementManager::measureIntervalEnd(long currentTimeMs)
 {
 	measureIntervalStarted = false;
+	measureIntervalEndTime = currentTimeMs;
 
 	if (wifi->numOfPacketsPerInterval > 0)
 	{
@@ -656,11 +671,11 @@ void MeasurementManager::measureIntervalEnd(long currentTimeMs)
 	{
 
             //update min Wi-Fi and LTE OWD for non-real-time traffic 
-			if (currentTimeMs - lastOwdUpdateTime > 10000) //10 seconds
+			if (currentTimeMs - lastOwdUpdateTime > 10000 || currentTimeMs < lastOwdUpdateTime) //10 seconds
 			{
 				lastOwdUpdateTime = currentTimeMs;
 				int max_minOwdPerCycle = std::max(p_systemStateSettings->wifiOwdMin, p_systemStateSettings->lteOwdMin);
-				if (max_minOwdPerCycle < 1000) 
+				if (max_minOwdPerCycle < 10000) //owd < 10 seconds 
 				{
 					p_systemStateSettings->wifiOwdTxOffset = std::min(250, max_minOwdPerCycle - p_systemStateSettings->wifiOwdMin); //max = 250ms (1 Byte)
 					p_systemStateSettings->lteOwdTxOffset = std::min(250,  max_minOwdPerCycle - p_systemStateSettings->lteOwdMin); //max = 250ms (1 Byte)
@@ -766,6 +781,7 @@ void MeasurementManager::measureIntervalEnd(long currentTimeMs)
 		{
 			if (false == trafficSplitting->congestionBasedAlgorithm(wifiPackets, ltePackets, static_cast<double>(wifiIntervalRate) / wifi->rateEstimationPerCycle, 0, wifi->lastIntervalOwd - p_systemStateSettings->wifiOwdOffset, lte->lastIntervalOwd))
 			{
+				//printf("\n ***** measuremnt end wifi owd  %d  offset: %d lte owd:  %d *****\n", wifi->lastIntervalOwd, p_systemStateSettings->wifiOwdOffset, lte->lastIntervalOwd );
 				measureCycleStart(lastSn);
 			}
 		}

@@ -683,6 +683,10 @@ void DataReceive::receiveWifiPacket(char *packet)
                     (measurementManager.wifi)->updateLsn(lSeqNum);
                     measurementManager.measureIntervalEndCheck(systemTimeMsLong);
                 }
+                else if (measurementManager.restart(systemTimeMsLong))
+                {
+                   measurementManager.measureCycleStart(flowNum);
+                }
 
                 if (p_systemStateSettings->splitEnable == 1 || p_systemStateSettings->currentTimeMs < p_systemStateSettings->reorderStopTime)
                 {
@@ -852,6 +856,10 @@ void DataReceive::receiveLtePacket(char *packet)
                     (measurementManager.lte)->updateLastPacketOwd(p_systemStateSettings->currentTimeMs - tx_time);
                     (measurementManager.lte)->updateLsn(lSeqNum);
                     measurementManager.measureIntervalEndCheck(systemTimeMsLong);
+                }
+                else if (measurementManager.restart(systemTimeMsLong))
+                {
+                   measurementManager.measureCycleStart(flowNum);
                 }
                 
                 if (p_systemStateSettings->splitEnable == 1 || p_systemStateSettings->currentTimeMs < p_systemStateSettings->reorderStopTime)

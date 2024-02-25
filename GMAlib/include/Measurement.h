@@ -90,6 +90,7 @@ private:
 	bool measureIntervalStarted = false; // true stands for a measurement interval is tarted
 	int measureIntervalIndex = 0; // current measure interval index
 	long measureIntervalStartTime = 0;
+	long measureIntervalEndTime = 0;
 	long lastOwdUpdateTime = 0;
 	long measureIntervalDuration;
 public:
@@ -107,6 +108,7 @@ public:
 	void measureCycleStart(int measureStartSn);
 	bool measureIntervalStartConditionCheck(int lastSn);
 	void measureIntervalStart(long currentTimeMs);
+	bool restart(long currentTimeMs);
 	void measureIntervalEndCheck(long currentTimeMs);
 	void measureIntervalEndAbnormal(long currenTimeMs);
 	void measureIntervalEnd (long currentTimeMs);
