@@ -184,8 +184,8 @@ bool TrafficSplitting::delayBasedAlgorithm(int wifiOwd, int lteOwd)
 		{
 			p_systemStateSettings->wifiIndexChangeAlpha = -1;
 		}
-		//if (wifiOwd >= lastDecisionWifiOwd && lastWifiIndex > 0)
-		if (lastWifiIndex > 0)
+		if ((wifiOwd - lteOwd >= lastDecisionWifiOwd - lastDecisionlteOwd) && (lastWifiIndex > 0))
+		//if (lastWifiIndex > 0)
 		{
 			lastWifiIndex += std::min(-1, p_systemStateSettings->wifiIndexChangeAlpha + p_systemStateSettings->STEP_ALPHA_THRESHOLD);
 			p_systemStateSettings->wifiIndexChangeAlpha -= 1;
@@ -193,15 +193,15 @@ bool TrafficSplitting::delayBasedAlgorithm(int wifiOwd, int lteOwd)
 			update = true;
 		}
 	}
-	//else if (p_systemStateSettings->TOLERANCE_DELAY_BOUND < lteOwd - wifiOwd)
-	else if (0  <= lteOwd - wifiOwd)
+	else if (p_systemStateSettings->TOLERANCE_DELAY_BOUND < lteOwd - wifiOwd)
+	//else if (0  <= lteOwd - wifiOwd)
 	{
 		if (p_systemStateSettings->wifiIndexChangeAlpha <= 0)
 		{
 			p_systemStateSettings->wifiIndexChangeAlpha = 1;
 		}
 		//if (lteOwd >= lastDecisionlteOwd && lastWifiIndex < p_systemStateSettings->paramL)
-		if (lastWifiIndex < p_systemStateSettings->paramL)
+		if ((lteOwd - wifiOwd  >= lastDecisionlteOwd - lastDecisionWifiOwd) && (lastWifiIndex < p_systemStateSettings->paramL))
 		{
 			lastWifiIndex += std::max(1, p_systemStateSettings->wifiIndexChangeAlpha - p_systemStateSettings->STEP_ALPHA_THRESHOLD);
 			p_systemStateSettings->wifiIndexChangeAlpha += 1;
