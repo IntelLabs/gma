@@ -45,6 +45,13 @@ void DataSend::processPackets(char *buffer, int length)
     {
         return;
     }
+	
+	int dst_ip = ipHeader.getDestinationIP();
+    if (wifi_server_ip == dst_ip || lte_server_ip == dst_ip)
+                     {   //drop the packet that is supposed to be tunnelled through Wi-Fi or LTE
+                         return;
+                     }
+    
     int dst_port = 0;
     int flow_id = p_systemStateSettings->nonRealtimelModeFlowId;
    
@@ -178,12 +185,15 @@ void DataSend::updataWifiChannel(GMASocket wifiFd)
 {
     wifiudp_fd = wifiFd;
     last_pkt_tos = 0;
+    wifi_server_ip = ipHeader.ipStringToInt(p_systemStateSettings->serverWifiTunnelIp);
+
 }
 
 void DataSend::updataLteChannel(GMASocket lteFd)
 {
     lteudp_fd = lteFd;
     last_pkt_tos = 0;
+    lte_server_ip = ipHeader.ipStringToInt(p_systemStateSettings->serverLteTunnelIp);
 }
 
 void DataSend::sendPacketToServer(char *data, int offset, int length)
@@ -215,14 +225,14 @@ void DataSend::sendHRPacketToServer(char *data, int offset, int length)
 
     if (wifiudp_fd != GMA_INVALID_SOCKET && p_systemStateSettings->gIsWifiConnect)
     {
-        if (sendto(wifiudp_fd, data + offset, length, 0, (struct sockaddr *)&wifiServer, sizeof(wifiServer)) > 0)
+        if (sendto(wifiudp_fd, data + offset, length, MSG_DONTWAIT | MSG_NOSIGNAL, (struct sockaddr *)&wifiServer, sizeof(wifiServer)) > 0)
             p_systemStateSettings->wifiSendBytes += length;
         else
             printf("\nsendto error\n");
     }
     if (lteudp_fd != GMA_INVALID_SOCKET && p_systemStateSettings->gIsLteConnect)
     {
-        if (sendto(lteudp_fd, data + offset, length, 0, (struct sockaddr *)&lteServer, sizeof(lteServer)) > 0)
+        if (sendto(lteudp_fd, data + offset, length, MSG_DONTWAIT | MSG_NOSIGNAL, (struct sockaddr *)&lteServer, sizeof(lteServer)) > 0)
             p_systemStateSettings->lteSendBytes += length;
         else
             printf("\nsendto error\n");
