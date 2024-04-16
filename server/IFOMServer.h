@@ -155,7 +155,7 @@ public:
 	*If a new packet is read from the TUN, ProcessPacket function is called to process this packet and schedule it to LTE/WiFi index queue.
 	*If the queue is already full, it returns without any packet processing.
 	*/
-	void ProcessPacket(u_int bytes);
+	void ProcessPacket(int bytes);
 
 	/*
 	*AddToWifiBuffer function add GMA header to the packet, update information related to the virtual index queue

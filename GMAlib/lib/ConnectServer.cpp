@@ -280,7 +280,7 @@ bool ConnectServer::SetClientPrefs(ptree &config_tree)
         ptree config = v.second.get_child("client_config");
 
         p_systemStateSettings->gNetWorkInterfaceMinMTU = config.get<int>("network_interface_minMTU");
-        p_systemStateSettings->gDynamicSplitFlag = config.get<int>("dynamic_split_flag");
+        //p_systemStateSettings->gDynamicSplitFlag = config.get<int>("dynamic_split_flag");
         p_systemStateSettings->gLteAlwaysOnFlag = config.get<int>("Lte_always_on_flag");
         p_systemStateSettings->congestDetectLossThreshold = pow(10, 0 - (double)(config.get<int>("congest_detect_loss_threshold")));
         p_systemStateSettings->congestDetectUtilizationThreshold = (double)(config.get<int>("congest_detect_utilization_threshold")) / 100;
@@ -325,6 +325,12 @@ bool ConnectServer::SetClientPrefs(ptree &config_tree)
         p_systemStateSettings->TOLERANCE_DELAY_H = config.get<int>("TOLERANCE_DELAY_H");
         p_systemStateSettings->TOLERANCE_DELAY_L = config.get<int>("TOLERANCE_DELAY_L");
         p_systemStateSettings->SPLIT_ALGORITHM = config.get<int>("SPLIT_ALGORITHM");
+        
+        if (p_systemStateSettings->SPLIT_ALGORITHM > 0)
+        p_systemStateSettings->gDynamicSplitFlag = 1;
+        else
+        p_systemStateSettings->gDynamicSplitFlag = 0;
+        
         p_systemStateSettings->INITIAL_PACKETS_BEFORE_LOSS = config.get<int>("INITIAL_PACKETS_BEFORE_LOSS");
         p_systemStateSettings->icmpFlowType = (unsigned char)config.get<int>("icmp_flow_type");
         p_systemStateSettings->tcpRTportStart = config.get<int>("tcp_rt_port_start");

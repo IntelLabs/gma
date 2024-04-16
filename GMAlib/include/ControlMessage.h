@@ -140,6 +140,7 @@ public:
     static const int buf_size = 1500;
     unsigned char buf[buf_size];
     int time;
+    int my_count = 0;
 
     IPHeader ipHeader;
     UDPHeader udpHeader;

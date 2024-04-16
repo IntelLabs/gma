@@ -328,7 +328,7 @@ void SendWifiProbeMsg::Execute()
 				p_systemStateSettings->controlMsgSn = (p_systemStateSettings->controlMsgSn + 1) & 0x0000FFFF; // 2bytes
 				lastSendWifiProbeTime = (int)(p_systemStateSettings->update_current_time_params() & 0x7FFFFFFF);
 				p_systemStateSettings->lastSendWifiProbe = lastSendWifiProbeTime;
-				p_systemStateSettings->lastReceiveWifiProbe = -1;
+				p_systemStateSettings->lastReceiveWifiProbeAck = -1;
 
 				plainText[28] = (unsigned char)1; //type
 				plainText[29] = (unsigned char)0; //CID
@@ -348,186 +348,210 @@ void SendWifiProbeMsg::Execute()
 				plainText[41] = (unsigned char)((lastSendWifiProbeTime & 0x0000FF00) >> 8);
 				plainText[42] = (unsigned char)(lastSendWifiProbeTime & 0x000000FF); //time stamp
 
-				if (wifiudpFd != GMA_INVALID_SOCKET)
-				{
-					sendFlag = false;
-					size++;
-					try
+					if (wifiudpFd != GMA_INVALID_SOCKET)
 					{
-						if (p_systemStateSettings->enable_encryption)
+						sendFlag = false;
+						size++;
+						try
 						{
-							int aad_len = 4;
-							unsigned char aad[4];
-							int tag_len = 16;
-							unsigned char tags[16];
-							int iv_len = 12;
-							unsigned char iv[12];
-
-							memset(aad, 0, aad_len);
-							memset(tags, 0, tag_len);
-							memset(iv, 0, iv_len);
-
-							memcpy(aad, buf, 4);
-
-							unsigned char cipher[256];
-							memset(cipher, 0, sizeof(cipher));
-
-							if (RAND_bytes(iv, iv_len))
+							if (p_systemStateSettings->enable_encryption)
 							{
-								EncryptorAesGcm encryptorAesGcm;
+								int aad_len = 4;
+								unsigned char aad[4];
+								int tag_len = 16;
+								unsigned char tags[16];
+								int iv_len = 12;
+								unsigned char iv[12];
 
-								int ret = encryptorAesGcm.Encrypt((unsigned char*)plainText, sizeof(plainText),
-									(unsigned char*)aad, aad_len,
-									(unsigned char*)(p_systemStateSettings->aesKey.c_str()),
-									(unsigned char*)iv, iv_len, (unsigned char*)cipher, tags);
-								if (!ret)
-								{
-								}
-								else
-								{
-									memcpy(buf + 4, cipher, plaintext_size);
-									memcpy(buf + 4 + plaintext_size, tags, tag_len);
-									memcpy(buf + 4 + plaintext_size + tag_len, iv, iv_len);
+								memset(aad, 0, aad_len);
+								memset(tags, 0, tag_len);
+								memset(iv, 0, iv_len);
 
-									std::stringstream ss;
-									if (sendto(wifiudpFd, (char*)buf, 75, 0, (struct sockaddr*)&wifiServer, sizeof(wifiServer)) < 0)
+								memcpy(aad, buf, 4);
+
+								unsigned char cipher[256];
+								memset(cipher, 0, sizeof(cipher));
+
+								if (RAND_bytes(iv, iv_len))
+								{
+									EncryptorAesGcm encryptorAesGcm;
+
+									int ret = encryptorAesGcm.Encrypt((unsigned char*)plainText, sizeof(plainText),
+										(unsigned char*)aad, aad_len,
+										(unsigned char*)(p_systemStateSettings->aesKey.c_str()),
+										(unsigned char*)iv, iv_len, (unsigned char*)cipher, tags);
+									if (!ret)
 									{
-										ss << "Error: Send Wifi Probe Failed\n";
-										p_systemStateSettings->PrintLogs(ss);
 									}
 									else
 									{
-										ss.str("");
-										ss << "success to send for the wifi probe!" << seqNum << std::endl;
-										p_systemStateSettings->PrintLogs(ss);
-										p_systemStateSettings->wifiSendBytes += 75;
-										sendFlag = true;
+										memcpy(buf + 4, cipher, plaintext_size);
+										memcpy(buf + 4 + plaintext_size, tags, tag_len);
+										memcpy(buf + 4 + plaintext_size + tag_len, iv, iv_len);
+
+										std::stringstream ss;
+										if (sendto(wifiudpFd, (char*)buf, 75, 0, (struct sockaddr*)&wifiServer, sizeof(wifiServer)) < 0)
+										{
+											ss << "Error: Send Wifi Probe Failed\n";
+											p_systemStateSettings->PrintLogs(ss);
+										}
+										else
+										{
+											ss.str("");
+											ss << "success to send for the wifi probe!" << seqNum << std::endl;
+											p_systemStateSettings->PrintLogs(ss);
+											p_systemStateSettings->wifiSendBytes += 75;
+											sendFlag = true;
+										}
 									}
 								}
-							}
-					
-						}
-						else
-						{
-							std::stringstream ss;
-							memcpy(buf + 2, plainText, plaintext_size);
-							if (sendto(wifiudpFd, (char*)buf, 45, 0, (struct sockaddr *)&wifiServer, sizeof(wifiServer)) < 0)
-							{
-								ss << "Error: Send Wifi Probe Failed\n";
-								p_systemStateSettings->PrintLogs(ss);
+						
 							}
 							else
 							{
-								ss.str("");
-								ss << "success to send for the wifi probe!" << seqNum << std::endl;
-								p_systemStateSettings->PrintLogs(ss);
-								p_systemStateSettings->wifiSendBytes += 45;
-								sendFlag = true;
-							}
-						}
-					}
-					catch (const std::exception &e)
-					{
-						std::stringstream ss;
-						ss << e.what() << std::endl;
-						p_systemStateSettings->PrintLogs(ss);
-					}
-					if (sendFlag)
-					{
-						snAndTimeArray.insert(std::pair<int, int>(seqNum, lastSendWifiProbeTime));
-
-						if (p_systemStateSettings->gIsLteConnect && !p_systemStateSettings->gDLAllOverLte)
-							wifiprobe_ack_cv.wait_for(ack_lck, std::chrono::milliseconds(p_systemStateSettings->wifiProbeTimeout));
-						else
-							wifiprobe_ack_cv.wait_for(ack_lck, std::chrono::milliseconds(1000));
-						
-						//sendProbeTime = p_systemStateSettings->lastReceiveWifiProbe;
-						if (snAndTimeArray.count(recvAckSN) > 0)
-						{
-							sendProbeTime = snAndTimeArray[recvAckSN];
-						}
-					}
-					else
-					{
-						wifiprobe_ack_cv.wait_for(ack_lck, std::chrono::milliseconds(3));
-					}
-					if (p_systemStateSettings->lastReceiveWifiProbe >= 0 && sendFlag)
-					{ //ack received
-						p_systemStateSettings->wifiLinkRtt = p_systemStateSettings->lastReceiveWifiProbe - sendProbeTime;
-						std::stringstream ss;
-						ss.str("");
-						ss << "\n WiFi probe rtt(ms): " << p_systemStateSettings->wifiLinkRtt << "\n";
-						p_systemStateSettings->PrintLogs(ss);
-						p_systemStateSettings->wifiLinkMaxRtt = std::max(p_systemStateSettings->wifiLinkRtt, p_systemStateSettings->wifiLinkMaxRtt);
-						size = 0; //reset the counter to 0;
-						snAndTimeArray.clear();
-						if (p_systemStateSettings->gIsWifiConnect == false && p_systemStateSettings->wifiLinkRtt - p_systemStateSettings->lteLinkRtt < p_systemStateSettings->rttThLow) //add a Rtt_Th1 to config.txt (Rtt_Th1 = 0)
-						{
-							p_systemStateSettings->gIsWifiConnect = true;
-							p_systemStateSettings->wifiIndexChangeAlpha = 0;
-							p_systemStateSettings->wifiSplitFactor = p_systemStateSettings->paramL;
-							p_systemStateSettings->lteSplitFactor = 0;
-							p_systemStateSettings->gDLAllOverLte = false;
-							p_systemStateSettings->GMAIPCMessage(1,0,0,false,0); //controlManager.sendTSUMsg()(); //sendTsu.sendtsu
-						}
-					}
-					else
-					{
-						if (size > 3)
-						{ // more than 3 transmissions, link failure
-							std::stringstream ss;
-							ss << "more than 3 times, wifi link failure\n";
-							size = 0;
-							p_systemStateSettings->PrintLogs(ss);
-							p_systemStateSettings->wifiLinkRtt = 1000;
-							p_systemStateSettings->wifiProbeTimeout = 1000;
-							p_systemStateSettings->numOfWifiLinkFailure++;
-							p_systemStateSettings->lastReceiveWifiProbe = 0;
-							p_systemStateSettings->gIsWifiConnect = false;
-							if (p_systemStateSettings->gTunAvailable)
-							{
-								if (p_systemStateSettings->gLteFlag)
+								std::stringstream ss;
+								memcpy(buf + 2, plainText, plaintext_size);
+								if (sendto(wifiudpFd, (char*)buf, 45, 0, (struct sockaddr *)&wifiServer, sizeof(wifiServer)) < 0)
 								{
-									p_systemStateSettings->gIsLteConnect = true;
-									if (p_systemStateSettings->gDLAllOverLte == false)
-									{
-										p_systemStateSettings->wifiSplitFactor = 0;
-										p_systemStateSettings->lteSplitFactor = p_systemStateSettings->paramL;
-										p_systemStateSettings->gDLAllOverLte = true;
-										p_systemStateSettings->GMAIPCMessage(1,0,0,false,0); //controlManager.sendTSUMsg();
-										p_systemStateSettings->GMAIPCMessage(3,0,0,false,0); //controlManager.sendLteProbe();
-										p_systemStateSettings->GMAIPCMessage(9, 0, 0, true, 2);
-									}
+									ss << "Error: Send Wifi Probe Failed\n";
+									p_systemStateSettings->PrintLogs(ss);
 								}
 								else
 								{
-									ThreadBusy = false;
-									p_systemStateSettings->mHandler(3);
 									ss.str("");
-									ss << "mHandler fail, line 374\n";
+									ss << "success to send for the wifi probe!" << seqNum << std::endl;
 									p_systemStateSettings->PrintLogs(ss);
-									return;
+									p_systemStateSettings->wifiSendBytes += 45;
+									sendFlag = true;
 								}
 							}
-							snAndTimeArray.clear();
-							p_systemStateSettings->GMAIPCMessage(10, 0, 0, false, 0);
+						}
+						catch (const std::exception &e)
+						{
+							std::stringstream ss;
+							ss << e.what() << std::endl;
+							p_systemStateSettings->PrintLogs(ss);
+						}
+						if (sendFlag)
+						{
+							snAndTimeArray.insert(std::pair<int, int>(seqNum, lastSendWifiProbeTime));
+
+							if (p_systemStateSettings->gIsLteConnect && !p_systemStateSettings->gDLAllOverLte)
+								wifiprobe_ack_cv.wait_for(ack_lck, std::chrono::milliseconds(p_systemStateSettings->wifiLinkRtt * 2 + 10));
+							else
+								wifiprobe_ack_cv.wait_for(ack_lck, std::chrono::milliseconds(1000));
+							
+							//sendProbeTime = p_systemStateSettings->lastReceiveWifiProbeAck;
 						}
 						else
 						{
-							intervalTime = 0; // retransmit immediately
+							wifiprobe_ack_cv.wait_for(ack_lck, std::chrono::milliseconds(3));
+							continue;
+						}
+
+						if (p_systemStateSettings->lastReceiveWifiProbeAck > 0 && sendFlag)
+						{ //ack received
+
+							if (snAndTimeArray.count(recvAckSN) > 0)
+							{
+								sendProbeTime = snAndTimeArray[recvAckSN];
+							}
+							else
+							{
+								printf("\n WiFi Probe Error Do not find SN \n");
+								continue;
+							}
+							int temp = p_systemStateSettings->lastReceiveWifiProbeAck - sendProbeTime;
+
+							if (temp < 0 || temp > 10000)
+							p_systemStateSettings->wifiLinkCtrlRtt = 1000;
+							else
+							p_systemStateSettings->wifiLinkCtrlRtt = temp;
+
+							p_systemStateSettings->wifiLinkRtt = p_systemStateSettings->wifiLinkCtrlRtt; //we will overwrite the value after the data owd measurement end.
+							std::stringstream ss;
+							ss.str("");
+							ss << "\n WiFi probe rtt(ms): " << p_systemStateSettings->wifiLinkRtt << "\n";
+							p_systemStateSettings->PrintLogs(ss);
+							p_systemStateSettings->wifiLinkMaxRtt = std::max(p_systemStateSettings->wifiLinkRtt, p_systemStateSettings->wifiLinkMaxRtt);
+							size = 0; //reset the counter to 0;
+							snAndTimeArray.clear();
+							if (p_systemStateSettings->gIsWifiConnect == false && p_systemStateSettings->wifiLinkRtt - p_systemStateSettings->lteLinkRtt < p_systemStateSettings->rttThLow) //add a Rtt_Th1 to config.txt (Rtt_Th1 = 0)
+							{
+								p_systemStateSettings->gIsWifiConnect = true;
+								p_systemStateSettings->wifiIndexChangeAlpha = 0;
+								p_systemStateSettings->wifiSplitFactor = p_systemStateSettings->paramL;
+								p_systemStateSettings->lteSplitFactor = 0;
+								p_systemStateSettings->gDLAllOverLte = false;
+								p_systemStateSettings->GMAIPCMessage(1,0,0,false,0); //controlManager.sendTSUMsg()(); //sendTsu.sendtsu
+							}
+						}
+						else
+						{
+							if (size > 3 )
+							{ // more than 3 transmissions, link failure
+								if (p_systemStateSettings->gIsWifiConnect)
+								{
+								std::stringstream ss;
+								ss << "more than 3 times, wifi link failure\n";
+								p_systemStateSettings->PrintLogs(ss);
+								p_systemStateSettings->wifiLinkRtt = 1000;
+								p_systemStateSettings->wifiLinkCtrlRtt = 1000;
+								p_systemStateSettings->wifiLinkCtrlOwd = INT_MAX;
+								p_systemStateSettings->wifiProbeTimeout = 1000;
+								p_systemStateSettings->numOfWifiLinkFailure++;
+								p_systemStateSettings->lastReceiveWifiProbeAck = 0;
+								p_systemStateSettings->gIsWifiConnect = false;
+								if (p_systemStateSettings->gTunAvailable)
+								{
+									if (p_systemStateSettings->gIsLteConnect)
+									{
+										//p_systemStateSettings->gIsLteConnect = true;
+										if (p_systemStateSettings->gDLAllOverLte == false)
+										{
+											p_systemStateSettings->wifiSplitFactor = 0;
+											p_systemStateSettings->lteSplitFactor = p_systemStateSettings->paramL;
+											p_systemStateSettings->gDLAllOverLte = true;
+											p_systemStateSettings->GMAIPCMessage(1,0,0,false,0); //controlManager.sendTSUMsg();
+											//p_systemStateSettings->GMAIPCMessage(3,0,0,false,0); //controlManager.sendLteProbe();
+											p_systemStateSettings->GMAIPCMessage(9, 0, 0, true, 2);
+										}
+									}
+									else
+									{
+										ThreadBusy = false;
+										p_systemStateSettings->mHandler(3);
+										ss.str("");
+										ss << "mHandler fail, line 374\n";
+										p_systemStateSettings->PrintLogs(ss);
+										return;
+									}
+								}
+								}
+								size = 0;
+								snAndTimeArray.clear();
+								//p_systemStateSettings->GMAIPCMessage(10, 0, 0, false, 0);  //reconfigure WiFi channel
+								
+								
+							}
+							else
+							{
+								intervalTime = 0; // retransmit immediately
+							}
 						}
 					}
-				}
-				else
+					else
 				{
 					std::stringstream ss;
 					ss << "wifi channel is NULL !\n";
 					p_systemStateSettings->PrintLogs(ss);
 
 					p_systemStateSettings->wifiLinkRtt = 1000;
+					p_systemStateSettings->wifiLinkCtrlRtt = 1000;
+					p_systemStateSettings->wifiLinkCtrlOwd = INT_MAX;
 					p_systemStateSettings->wifiProbeTimeout = 1000;
 					p_systemStateSettings->numOfWifiLinkFailure++;
-					p_systemStateSettings->lastReceiveWifiProbe = 0;
+					p_systemStateSettings->lastReceiveWifiProbeAck = 0;
 					p_systemStateSettings->gIsWifiConnect = false;
 					if (!p_systemStateSettings->gIsLteConnect)
 					{
@@ -541,8 +565,47 @@ void SendWifiProbeMsg::Execute()
 
 				}
 				sendWifiProbeThreadBusy = false;
+				
 				if (intervalTime > 0)
 				{
+					if(p_systemStateSettings->SPLIT_ALGORITHM == 3) //GMA 2.0
+					{
+						long count = 0;
+						switch(p_systemStateSettings->wifiLinkFailureFlag) {
+							case 1:   						
+								while (p_systemStateSettings->wifiLinkFailureFlag == 1)
+								{
+									if (p_systemStateSettings->wifiRx_interval < INT_MAX )
+									{	
+									//	printf("\n  wifi active %ld: \n", p_systemStateSettings->wifiRx_interval);
+										p_systemStateSettings->wifiLinkFailureFlag = 2; 
+										long temp_t = std::min((long)5000, std::max((long)50, std::max(p_systemStateSettings->wifiRx_interval*5, (long)p_systemStateSettings->wifiLinkRtt)));
+										wifiprobe_next_cv.wait_for(next_lck, std::chrono::milliseconds(temp_t)); //>= 50ms
+										if (p_systemStateSettings->wifiLinkFailureFlag == 2)
+										{
+										intervalTime = 0; 
+										size = 4; //only send Probe once to detect link failure
+										}
+										else 
+										{
+											count = count + temp_t; 
+											if(count > 5000)  //send a probe every 5 seconds 
+											{
+												intervalTime = 0; 
+												break;
+											}  
+										}
+									}
+									else
+										break;
+								}
+
+							break;
+							case 2:   p_systemStateSettings->wifiLinkFailureFlag = 0; break;
+							default:  break;// 0 unkown 
+						}
+					}
+					if (intervalTime > 0)
 					wifiprobe_next_cv.wait_for(next_lck, std::chrono::milliseconds(intervalTime * 1000)); // sychronized lock
 				}
 			}
@@ -847,7 +910,7 @@ void SendLteProbeMsg::Execute()
 
 				lastSendLteProbeTime = (int)(p_systemStateSettings->update_current_time_params() & 0x7FFFFFFF);
 				p_systemStateSettings->lastSendLteProbe = lastSendLteProbeTime;
-				p_systemStateSettings->lastReceiveLteProbe = -1;
+				p_systemStateSettings->lastReceiveLteProbeAck = -1;
 				plainText[28] = (unsigned char)1; //type
 				plainText[29] = (unsigned char)3; //CID
 				plainText[30] = (unsigned char)((p_systemStateSettings->key & 0xFF000000) >> 24);
@@ -880,173 +943,246 @@ void SendLteProbeMsg::Execute()
 						int iv_len = 12;
 						unsigned char iv[12];
 
-						memset(aad, 0, aad_len);
-						memset(tags, 0, tag_len);
-						memset(iv, 0, iv_len);
+							memset(aad, 0, aad_len);
+							memset(tags, 0, tag_len);
+							memset(iv, 0, iv_len);
 
-						memcpy(aad, buf, 4);
+							memcpy(aad, buf, 4);
 
-						unsigned char cipher[256];
-						memset(cipher, 0, sizeof(cipher));
+							unsigned char cipher[256];
+							memset(cipher, 0, sizeof(cipher));
 
 
-						if (RAND_bytes(iv, iv_len))
-						{
-
-							EncryptorAesGcm encryptorAesGcm;
-
-							int ret = encryptorAesGcm.Encrypt((unsigned char*)plainText, sizeof(plainText),
-								(unsigned char*)aad, aad_len,
-								(unsigned char*)(p_systemStateSettings->aesKey.c_str()),
-								(unsigned char*)iv, iv_len, (unsigned char*)cipher, tags);
-							if (!ret)
+							if (RAND_bytes(iv, iv_len))
 							{
-							}
-							else {
-								memcpy(buf + 4, cipher, plaintext_size);
-								memcpy(buf + 4 + plaintext_size, tags, tag_len);
-								memcpy(buf + 4 + plaintext_size + tag_len, iv, iv_len);
-								std::stringstream ss;
-								if (sendto(lteudpFd, (char *)buf, buf_size, 0, (struct sockaddr*)&lteServer, sizeof(lteServer)) < 0)
-								{
-									ss << "Error: Send lte Probe Failed\n";
-									p_systemStateSettings->PrintLogs(ss);
 
-								}
-								else
+								EncryptorAesGcm encryptorAesGcm;
+
+								int ret = encryptorAesGcm.Encrypt((unsigned char*)plainText, sizeof(plainText),
+									(unsigned char*)aad, aad_len,
+									(unsigned char*)(p_systemStateSettings->aesKey.c_str()),
+									(unsigned char*)iv, iv_len, (unsigned char*)cipher, tags);
+								if (!ret)
 								{
-									ss.str("");
-									ss << "success to send for the lte probe!" << seqNum << std::endl;
-									p_systemStateSettings->PrintLogs(ss);
-									p_systemStateSettings->lteSendBytes += 75;
-									sendFlag = true;
+									printf("\n Error: aes ecryption\n");
+									continue;
 								}
+								else {
+									memcpy(buf + 4, cipher, plaintext_size);
+									memcpy(buf + 4 + plaintext_size, tags, tag_len);
+									memcpy(buf + 4 + plaintext_size + tag_len, iv, iv_len);
+									std::stringstream ss;
+									if (sendto(lteudpFd, (char *)buf, buf_size, 0, (struct sockaddr*)&lteServer, sizeof(lteServer)) < 0)
+									{
+										ss << "Error: Send lte Probe Failed\n";
+										p_systemStateSettings->PrintLogs(ss);
+
+									}
+									else
+									{
+										ss.str("");
+										ss << "success to send for the lte probe!" << seqNum << std::endl;
+										p_systemStateSettings->PrintLogs(ss);
+										p_systemStateSettings->lteSendBytes += 75;
+										sendFlag = true;
+									}
+								}
+							}
+							else
+							{
+								printf("\n Error: RAND_bytes\n");
+								continue;
 							}
 						}
-					}
-					else
-					{
-						memcpy(buf + 2, plainText, 43);
-						std::stringstream ss;
-						if (sendto(lteudpFd, (char *)buf, 45, 0, (struct sockaddr *)&lteServer, sizeof(lteServer)) < 0)
+						else
 						{
-							ss << "Send Lte probe Failed !!! \n";
-							p_systemStateSettings->PrintLogs(ss);
+							memcpy(buf + 2, plainText, 43);
+							std::stringstream ss;
+							if (sendto(lteudpFd, (char *)buf, 45, 0, (struct sockaddr *)&lteServer, sizeof(lteServer)) < 0)
+							{
+								ss << "Send Lte probe Failed !!! \n";
+								p_systemStateSettings->PrintLogs(ss);
+								
+							}
+							else
+							{
+								ss.str("");
+								ss << "success for the LTE probe!" << seqNum;
+								p_systemStateSettings->PrintLogs(ss);
+								p_systemStateSettings->lteSendBytes += 45;
+								sendFlag = true;
+							}
+						}
+
+						if (sendFlag)
+						{
+							snAndTimeArray.insert(std::pair<int, int>(seqNum, lastSendLteProbeTime));
+							if (!p_systemStateSettings->gIsWifiConnect || !p_systemStateSettings->gIsLteConnect)
+								lteprobe_ack_cv.wait_for(ack_lck, std::chrono::milliseconds(2000));
+							else
+								lteprobe_ack_cv.wait_for(ack_lck, std::chrono::milliseconds(p_systemStateSettings->lteLinkRtt * 2 + 10));
 							
 						}
 						else
 						{
-							ss.str("");
-							ss << "success for the LTE probe!" << seqNum;
-							p_systemStateSettings->PrintLogs(ss);
-							p_systemStateSettings->lteSendBytes += 45;
-							sendFlag = true;
+							lteprobe_ack_cv.wait_for(ack_lck, std::chrono::milliseconds(3));
+							continue;
 						}
-					}
-
-					if (sendFlag)
-					{
-
-						snAndTimeArray.insert(std::pair<int, int>(seqNum, lastSendLteProbeTime));
-						lteprobe_ack_cv.wait_for(ack_lck, std::chrono::milliseconds(2000));
-						//sendProbeTime = p_systemStateSettings->lastReceiveLteProbe;
-						if (snAndTimeArray.count(recvAckSN) > 0)
-						{
-							sendProbeTime = snAndTimeArray[recvAckSN];
-						}
-					}
-					else
-					{
-						lteprobe_ack_cv.wait_for(ack_lck, std::chrono::milliseconds(3));
-					}
-					if (p_systemStateSettings->lastReceiveLteProbe >= 0 && sendFlag)
-					{ //received ack
-						p_systemStateSettings->lteLinkRtt = p_systemStateSettings->lastReceiveLteProbe - sendProbeTime;
-						std::stringstream ss;
-						ss.str("");
-						ss << "\n LTE probe rtt(ms): " << p_systemStateSettings->lteLinkRtt << "\n";
-						p_systemStateSettings->PrintLogs(ss);
-						size = 0;
-						snAndTimeArray.clear();
-						if (!p_systemStateSettings->gIsLteConnect)
-						{
-							p_systemStateSettings->gIsLteConnect = true;
-							p_systemStateSettings->GMAIPCMessage(1, 0, 0, false, 0); //controlManager.sendTSUMsg();
-						}
-
-				
-						if (!p_systemStateSettings->gTunAvailable)
-						{
-
-							if (!p_systemStateSettings->gIsWifiConnect)
+						if (p_systemStateSettings->lastReceiveLteProbeAck > 0 && sendFlag)
+						{ //received ack
+							if (snAndTimeArray.count(recvAckSN) > 0)
 							{
-								p_systemStateSettings->wifiSplitFactor = 0;
-								p_systemStateSettings->lteSplitFactor = p_systemStateSettings->paramL;
-								p_systemStateSettings->gDLAllOverLte = true;
-								p_systemStateSettings->GMAIPCMessage(1,0,0,false,0); //controlManager.sendTSUMsg();
-
-							} //move traffic to LTE (while WiFi is not connected)
-
-							std::stringstream ss;
-							ss << "Probes ok, start to build tun now..\n";
-							p_systemStateSettings->PrintLogs(ss);
-							p_systemStateSettings->mHandler(0);
-						}
-						else
-						{
-							if (p_systemStateSettings->wifiLinkRtt - p_systemStateSettings->lteLinkRtt > p_systemStateSettings->rttThHigh && p_systemStateSettings->gIsWifiConnect) ////add a Rtt_Th2 to config.txt
-							{
-								p_systemStateSettings->gIsWifiConnect = false; //wifi delay is too big and therefore treated as "disconnect"
-								p_systemStateSettings->wifiSplitFactor = 0;
-								p_systemStateSettings->lteSplitFactor = p_systemStateSettings->paramL;
-								p_systemStateSettings->gDLAllOverLte = true;
-								p_systemStateSettings->GMAIPCMessage(1,0,0,false,0); //controlManager.sendTSUMsg();
-							}
-						}
-						//move traffic to LTE (while WiFi is not connected)
-					}
-					else
-					{
-						if (size > 4)
-						{ //more than 3 transmissions, link failure
-							size = 0;
-							p_systemStateSettings->lastReceiveLteProbe = 0;
-							std::stringstream ss;
-							ss << "more than 3 times, lte link failure\n";
-							p_systemStateSettings->PrintLogs(ss);
-
-							p_systemStateSettings->numOfLteLinkFailure++;
-							p_systemStateSettings->gIsLteConnect = false;
-							if (p_systemStateSettings->gIsWifiConnect && p_systemStateSettings->gTunAvailable)
-							{
-								p_systemStateSettings->wifiIndexChangeAlpha = 0;
-								p_systemStateSettings->wifiSplitFactor = p_systemStateSettings->paramL;
-								p_systemStateSettings->lteSplitFactor = 0;
-								p_systemStateSettings->GMAIPCMessage(1,0,0,false,0); //controlManager.sendTSUMsg();
+								sendProbeTime = snAndTimeArray[recvAckSN];
 							}
 							else
 							{
-
-								p_systemStateSettings->mHandler(3);
-								ss.str("");
-								ss << "mHandler fail, line 658\n";
-								p_systemStateSettings->PrintLogs(ss);
-								ThreadBusy = false;
-								return;
+								printf("\n LTE probe error: do not find SN \n");
+								continue;
 							}
+
+							int temp = p_systemStateSettings->lastReceiveLteProbeAck - sendProbeTime;
+							if (temp < 0 || temp > 10000)
+							p_systemStateSettings->lteLinkCtrlRtt = 1000;
+							else
+							p_systemStateSettings->lteLinkCtrlRtt = temp;
+
+							p_systemStateSettings->lteLinkRtt = p_systemStateSettings->lteLinkCtrlRtt; //we will overwrite the value after the data owd measurement end.
+
+							
+
+							std::stringstream ss;
+							ss.str("");
+							ss << "\n LTE probe rtt(ms): " << p_systemStateSettings->lteLinkRtt << "\n";
+							p_systemStateSettings->PrintLogs(ss);
+							size = 0;
 							snAndTimeArray.clear();
+							if (!p_systemStateSettings->gIsLteConnect)
+							{
+								p_systemStateSettings->gIsLteConnect = true;
+								p_systemStateSettings->GMAIPCMessage(1, 0, 0, false, 0); //controlManager.sendTSUMsg();
+							}
+
+					
+							if (!p_systemStateSettings->gTunAvailable)
+							{
+
+								if (!p_systemStateSettings->gIsWifiConnect)
+								{
+									p_systemStateSettings->wifiSplitFactor = 0;
+									p_systemStateSettings->lteSplitFactor = p_systemStateSettings->paramL;
+									p_systemStateSettings->gDLAllOverLte = true;
+									p_systemStateSettings->GMAIPCMessage(1,0,0,false,0); //controlManager.sendTSUMsg();
+
+								} //move traffic to LTE (while WiFi is not connected)
+
+								std::stringstream ss;
+								ss << "Probes ok, start to build tun now..\n";
+								p_systemStateSettings->PrintLogs(ss);
+								p_systemStateSettings->mHandler(0);
+							}
+							else
+							{
+								if (p_systemStateSettings->wifiLinkRtt - p_systemStateSettings->lteLinkRtt > p_systemStateSettings->rttThHigh && p_systemStateSettings->gIsWifiConnect) ////add a Rtt_Th2 to config.txt
+								{
+									p_systemStateSettings->gIsWifiConnect = false; //wifi delay is too big and therefore treated as "disconnect"
+									p_systemStateSettings->wifiSplitFactor = 0;
+									p_systemStateSettings->lteSplitFactor = p_systemStateSettings->paramL;
+									p_systemStateSettings->gDLAllOverLte = true;
+									p_systemStateSettings->GMAIPCMessage(1,0,0,false,0); //controlManager.sendTSUMsg();
+								}
+							}
+							//move traffic to LTE (while WiFi is not connected)
 						}
 						else
 						{
-							intervalTime = 0; // retransmit immediately
-							if (size == 3)
-								p_systemStateSettings->GMAIPCMessage(11, 0, 0, false, 0);
+							printf("\n LTE failed %d \n", size);
+							int max_size = 4;
+							if (size > max_size)
+							{ //more than 3 transmissions, link failure
+								size = 0;
+								p_systemStateSettings->lastReceiveLteProbeAck = 0;
+								std::stringstream ss;
+								ss << "more than 3 times, lte link failure\n";
+								p_systemStateSettings->PrintLogs(ss);
+
+								p_systemStateSettings->numOfLteLinkFailure++;
+								p_systemStateSettings->gIsLteConnect = false;
+								if (p_systemStateSettings->gIsWifiConnect && p_systemStateSettings->gTunAvailable)
+								{
+									p_systemStateSettings->wifiIndexChangeAlpha = 0;
+									p_systemStateSettings->wifiSplitFactor = p_systemStateSettings->paramL;
+									p_systemStateSettings->lteSplitFactor = 0;
+									p_systemStateSettings->GMAIPCMessage(1,0,0,false,0); //controlManager.sendTSUMsg();
+								}
+								else
+								{
+
+									p_systemStateSettings->mHandler(3);
+									ss.str("");
+									ss << "mHandler fail, line 658\n";
+									p_systemStateSettings->PrintLogs(ss);
+									ThreadBusy = false;
+									return;
+								}
+								snAndTimeArray.clear();
+							}
+							else
+							{
+								intervalTime = 0; // retransmit immediately
+								/*if (size > 3 )
+								{
+									printf("\n reconfigure LTE channel\n");
+									p_systemStateSettings->GMAIPCMessage(11, 0, 0, false, 0);
+								}*/
+							}
 						}
 					}
-				}
+					else
+					{
+						p_systemStateSettings->GMAIPCMessage(11, 0, 0, false, 0);
+					}
+			
 				sendLteProbeThreadBusy = false;
 				if (intervalTime > 0)
 				{
+
+					if(p_systemStateSettings->SPLIT_ALGORITHM == 3) //GMA 2.0
+					{
+						long count = 0;	
+						switch(p_systemStateSettings->lteLinkFailureFlag) {
+						case 1:   			
+							while (p_systemStateSettings->lteLinkFailureFlag == 1)
+							{
+								if (p_systemStateSettings->lteRx_interval < INT_MAX)
+								{	
+								//	printf("\n  wifi active %ld: \n", p_systemStateSettings->wifiRx_interval);
+									p_systemStateSettings->lteLinkFailureFlag = 2; 
+									long temp_t = std::min((long)5000, std::max((long)50, std::max(p_systemStateSettings->lteRx_interval*5, (long)p_systemStateSettings->lteLinkRtt)));
+									lteprobe_next_cv.wait_for(next_lck, std::chrono::milliseconds(temp_t)); //>50ms
+									if (p_systemStateSettings->lteLinkFailureFlag == 2)
+									{
+									 intervalTime = 0; 
+									 size = 4;
+									 }
+									 else
+									 {
+										count  = count + temp_t; 
+										if(count > 5000)  //send a probe every 5 seconds 
+										{
+												intervalTime = 0; 
+												break;
+										}  
+									 }
+								}
+								else
+								    break;
+							}
+
+						break;
+						case 2:   p_systemStateSettings->lteLinkFailureFlag = 0; break;
+						default:  break;// 0 unkown 
+						}
+					}
 					lteprobe_next_cv.wait_for(next_lck, std::chrono::milliseconds(intervalTime * 1000));
 				}
 			}
@@ -1351,6 +1487,10 @@ void SendMRPMsg::Execute()
 				p_systemStateSettings->wifiOwdMin = INT_MAX;
 				p_systemStateSettings->lteOwdMax = INT_MIN;
 				p_systemStateSettings->lteOwdMin = INT_MAX;
+				p_systemStateSettings->wifiOwdMinLongTerm = INT_MAX;
+				p_systemStateSettings->lteOwdMinLongTerm = INT_MAX;
+				p_systemStateSettings->wifiLinkCtrlOwd = INT_MAX;
+				p_systemStateSettings->lteLinkCtrlOwd = INT_MAX;
 			}
 
 
@@ -1908,22 +2048,22 @@ void SendMRPMsg::PrepareMeasureReport()
 
 	p_systemStateSettings->MRPinterval = p_systemStateSettings->MRPintervalActive;
 
-	if (p_systemStateSettings->wifiPacketNum < time * 3 || !p_systemStateSettings->gIsLteConnect) // low traffic activity or LTE not connected
+	if (p_systemStateSettings->wifiPacketNum_last_interval < 10 || !p_systemStateSettings->gIsLteConnect) // low traffic activity or LTE not connected
 	{
 		p_systemStateSettings->wifiProbeTh = INT_MAX;
 		p_systemStateSettings->wifiProbeTimeout = 1000;
 	}
 	else
 	{
-		p_systemStateSettings->wifiProbeTh = (int)(time * 1000 * 5 / p_systemStateSettings->wifiPacketNum);
-		if (p_systemStateSettings->wifiProbeTh < 50) //min = 50ms
-			p_systemStateSettings->wifiProbeTh = 50;
+		p_systemStateSettings->wifiProbeTh = (int)(10 * 1000 * 5 / p_systemStateSettings->wifiPacketNum_last_interval);
+		if (p_systemStateSettings->wifiProbeTh < 10) //min = 50ms
+			p_systemStateSettings->wifiProbeTh = 10;
 
 		if (p_systemStateSettings->wifiLinkMaxRtt > 0)
 		{
-			p_systemStateSettings->wifiProbeTimeout = p_systemStateSettings->wifiLinkMaxRtt * 2;
-			if (p_systemStateSettings->wifiProbeTimeout < 100) //min timeout = 100ms
-				p_systemStateSettings->wifiProbeTimeout = 100;
+			p_systemStateSettings->wifiProbeTimeout = p_systemStateSettings->wifiLinkMaxRtt * 4;
+			if (p_systemStateSettings->wifiProbeTimeout < 20) //min timeout = 100ms
+				p_systemStateSettings->wifiProbeTimeout = 20;
 		}
 		else
 			p_systemStateSettings->wifiProbeTimeout = 1000;
@@ -1951,16 +2091,23 @@ void SendMRPMsg::PrepareMeasureReport()
 	}
 	else
 	{
-		if (!p_systemStateSettings->gIsWifiConnect && p_systemStateSettings->gWifiFlag)
+		switch(my_count) 
 		{
-			p_systemStateSettings->GMAIPCMessage(2,0,0,false,0); //controlManager.sendWifiProbe(); //sendWifiProbeMsg.sendWifiProbe();
+		   case 0: //always send a probe to wifi and lte to resync the time drift between TX and RX.
+		//if (!p_systemStateSettings->gIsWifiConnect && p_systemStateSettings->gWifiFlag)
+				  p_systemStateSettings->GMAIPCMessage(2,0,0,false,0); //controlManager.sendWifiProbe(); //sendWifiProbeMsg.sendWifiProbe();
 			//sendWifiProbe(); //probing to check if Wi-Fi is connected
+			      break;
+		   case 1: p_systemStateSettings->GMAIPCMessage(3,0,0,false,0); //controlManager.sendLteProbe();
+		           break;
+		   case 2: if (p_systemStateSettings->wifiSplitFactor == 0 || p_systemStateSettings->lteSplitFactor == 0) //send TSU to reset TX OWD offset
+		   	             p_systemStateSettings->GMAIPCMessage(1,0,0,false,0); //controlManager.sendTSUMsg();
+				   break;
+		   default: break;
 		}
-
-		if (p_systemStateSettings->wifiSplitFactor == 0 || p_systemStateSettings->lteSplitFactor == 0) //send TSU to reset TX OWD offset
-		{
-			p_systemStateSettings->GMAIPCMessage(1,0,0,false,0); //controlManager.sendTSUMsg();
-		}
+		my_count ++; 
+		if (my_count > 2)
+		 my_count = 0;
 
 	}
 /*
@@ -2215,7 +2362,7 @@ void SendTSUMsg::trafficSplitingUpdate()
 	int linkFlag = 0; //2: wifi; 1: lte;
 		
 	plainText[28] = (unsigned char)5;														//type
-	if (p_systemStateSettings->gIsWifiConnect && wifiSplitFactor > 0 && lteSplitFactor == 0)
+	    if (p_systemStateSettings->gIsWifiConnect && wifiSplitFactor > 0) // && lteSplitFactor == 0)
 		{
 			plainText[29] = (unsigned char)0;
 		}
@@ -2247,15 +2394,20 @@ void SendTSUMsg::trafficSplitingUpdate()
 		plainText[42] = (unsigned char)(p_systemStateSettings->gDLAllOverLte || p_systemStateSettings->gDlRToverLteFlag == 1 ? 0 : 1); //K1
 		plainText[43] = (unsigned char)(p_systemStateSettings->gDLAllOverLte || p_systemStateSettings->gDlRToverLteFlag == 1 ? 1 : 0); //K2
 		plainText[44] = (unsigned char)1;		
+		plainText[45]  = 0;
+		plainText[46]  = 0;
 		if (lteSplitFactor == 0 || wifiSplitFactor == 0) //reset OWD offset
 		{
-			plainText[45]  = 255;
-			plainText[46]  = 255;
+			if (p_systemStateSettings->resetOWDoffsetFlag)
+			{
+				plainText[45]  = 255;
+				plainText[46]  = 255;
+			}
 		}
 		else
 		{
 
-			if (p_systemStateSettings->wifiOwdTxOffset > 0 || p_systemStateSettings->lteOwdTxOffset > 0)	
+			if (p_systemStateSettings->wifiOwdTxOffset > 3 || p_systemStateSettings->lteOwdTxOffset > 3)	//no update if < 3ms
 			{
 				plainText[45] = (unsigned char)p_systemStateSettings->wifiOwdTxOffset; //max = 250ms (1 Byte)
 				plainText[46] = (unsigned char)p_systemStateSettings->lteOwdTxOffset;
@@ -2263,16 +2415,12 @@ void SendTSUMsg::trafficSplitingUpdate()
 				p_systemStateSettings->wifiOwdTxOffset = 0;
 				p_systemStateSettings->lteOwdTxOffset = 0;
 			}
-			else
-			{
-				plainText[45]  = 0;
-				plainText[46]  = 0;
-			}
 		}
 		
 	
 	while (size < 8 && tsu_success_flag == 0)
-	{ //transmit up to 3 times
+	{ 
+		//transmit up to 3 times
 		seqNum = p_systemStateSettings->controlMsgSn;
 		plainText[34] = (unsigned char)((seqNum & 0xff00) >> 8);
 		plainText[35] = (unsigned char)(seqNum & 0x00ff); //seq num
@@ -2335,7 +2483,7 @@ void SendTSUMsg::trafficSplitingUpdate()
 		catch (const char *e)
 		{
 		}
-		if (p_systemStateSettings->gIsWifiConnect && wifiSplitFactor > 0 && lteSplitFactor == 0)
+		if (p_systemStateSettings->gIsWifiConnect && wifiSplitFactor > 0)
 		{
 			p_systemStateSettings->lastSendWifiTsu = (int)(p_systemStateSettings->update_current_time_params() & 0x7FFFFFFF);
 			if (wifiudpFd != GMA_INVALID_SOCKET)
@@ -2353,18 +2501,30 @@ void SendTSUMsg::trafficSplitingUpdate()
 		}
 		else 
 		{
-			p_systemStateSettings->lastSendLteTsu = (int)(p_systemStateSettings->update_current_time_params() & 0x7FFFFFFF);
-			if (lteudpFd != GMA_INVALID_SOCKET)
+			if (!p_systemStateSettings->gIsWifiConnect && wifiSplitFactor > 0 )
 			{
-				if (sendto(lteudpFd, (char *)buf, buf_size, 0, (struct sockaddr *)&lteServer, sizeof(lteServer)) <= 0)				
-				{
-					std::stringstream ss;
-					ss << "[TSU ERROR]: Send over lte\n";
-					p_systemStateSettings->PrintLogs(ss);				}
+				linkFlag = 0; 
+				break;
 			}
-			p_systemStateSettings->lteSendBytes += buf_size;
-			lteSnAndTimeArray.insert(std::pair<int, int>(seqNum, p_systemStateSettings->lastSendLteTsu));
-			linkFlag = 1;
+			else 
+			{
+				p_systemStateSettings->lastSendLteTsu = (int)(p_systemStateSettings->update_current_time_params() & 0x7FFFFFFF);
+				if (lteudpFd != GMA_INVALID_SOCKET)
+				{
+					if (sendto(lteudpFd, (char *)buf, buf_size, 0, (struct sockaddr *)&lteServer, sizeof(lteServer)) <= 0)				
+					{
+						std::stringstream ss;
+						ss << "[TSU ERROR]: Send over lte\n";
+						p_systemStateSettings->PrintLogs(ss);				
+					}
+					p_systemStateSettings->lteSendBytes += buf_size;
+					lteSnAndTimeArray.insert(std::pair<int, int>(seqNum, p_systemStateSettings->lastSendLteTsu));
+					linkFlag = 1;
+				}
+				else
+				    linkFlag = 0;
+				
+ 			 }
 		}
 
 		nextRecvTSASeqNum = seqNum;
@@ -2384,7 +2544,8 @@ void SendTSUMsg::trafficSplitingUpdate()
 			ss << "control message manager TSU-over-LTE failure\n";
 			p_systemStateSettings->PrintLogs(ss);
 			p_systemStateSettings->numOfLteLinkFailure++;
-			p_systemStateSettings->lastReceiveLteProbe = 0;
+			p_systemStateSettings->lastReceiveLteProbeAck = 0;
+
 			p_systemStateSettings->gIsLteConnect = false;
 			if (p_systemStateSettings->gIsWifiConnect)
 			{
@@ -2394,25 +2555,27 @@ void SendTSUMsg::trafficSplitingUpdate()
 				wifiSplitFactor = p_systemStateSettings->paramL;
 				lteSplitFactor = 0;
 				p_systemStateSettings->gDLAllOverLte = false;
-				trafficSplitingUpdate();
+				//trafficSplitingUpdate();
+				p_systemStateSettings->GMAIPCMessage(1,0,0,false,0); //controlManager.sendTSUMsg()(); //sendTsu.sendtsu
 				p_systemStateSettings->GMAIPCMessage(2,0,0,false,0); //controlManager.sendWifiProbe(); //sendWifiProbeMsg.sendWifiProbe();
 			}
-			else
+			/*else
 			{
-				ss.str("");
+				/*ss.str("");
 				ss << "line 1807-1813 commented, check segmentation fault\n";
 				p_systemStateSettings->mHandler(3);
 				ss << "mHandler fail, line 1779\n";
 				p_systemStateSettings->PrintLogs(ss);
 				return;
-			}
+			}*/
 			lteSnAndTimeArray.clear();
 			break;
 		case 2: //TSU-over-WiFi fails
 			ss << "control message manager TSU-over-Wi-Fi failure\n";
 			p_systemStateSettings->PrintLogs(ss);
 			p_systemStateSettings->numOfWifiLinkFailure++;
-			p_systemStateSettings->lastReceiveWifiProbe = 0;
+			p_systemStateSettings->lastReceiveWifiProbeAck = 0;
+
 			p_systemStateSettings->gIsWifiConnect = false;
 			if (p_systemStateSettings->gIsLteConnect)
 			{
@@ -2421,19 +2584,20 @@ void SendTSUMsg::trafficSplitingUpdate()
 				p_systemStateSettings->wifiSplitFactor = 0;
 				p_systemStateSettings->lteSplitFactor = p_systemStateSettings->paramL;
 				p_systemStateSettings->gDLAllOverLte = true;
-				trafficSplitingUpdate();
+				//trafficSplitingUpdate();
+				p_systemStateSettings->GMAIPCMessage(1,0,0,false,0); //controlManager.sendTSUMsg()(); //sendTsu.sendtsu
 				p_systemStateSettings->GMAIPCMessage(3,0,0,false,0); //controlManager.sendLteProbe(); //sendLteProbeMsg.sendLteProbe();
 				p_systemStateSettings->GMAIPCMessage(9, 0, 0, true, 3);
 			}
-			else
+			/*else
 			{
 				ss.str("");
 				ss << "line 1833-1839 commented, check segmentation fault\n";
 				p_systemStateSettings->mHandler(3);
 				ss << "mHandler fail, line 1805\n";
 				p_systemStateSettings->PrintLogs(ss);
-				return;
-			}
+				//return;
+			}*/
 			wifiSnAndTimeArray.clear();
 			break;
 		default:
@@ -2458,7 +2622,8 @@ void SendTSUMsg::receiveWifiTSA(int recvProbeAckSeqNum, int recvWifiTSATime)
 	}
 	if (recvWifiTSATime - sendTSUTime > 0)
 	{
-		p_systemStateSettings->wifiLinkRtt = recvWifiTSATime - sendTSUTime;
+		p_systemStateSettings->wifiLinkCtrlRtt = recvWifiTSATime - sendTSUTime;
+		p_systemStateSettings->wifiLinkRtt = p_systemStateSettings->wifiLinkCtrlRtt; //we will overwrite the value after the data owd measurement end.
 		p_systemStateSettings->wifiLinkMaxRtt = std::max(p_systemStateSettings->wifiLinkRtt, p_systemStateSettings->wifiLinkMaxRtt);
 
 		wifiSnAndTimeArray.clear();
@@ -2481,7 +2646,8 @@ void SendTSUMsg::receiveLteTSA(int recvProbeAckSeqNum, int recvLteTSATime)
 	}
 	if (recvLteTSATime - sendTSUTime > 0)
 	{
-		p_systemStateSettings->lteLinkRtt = recvLteTSATime - sendTSUTime;
+		p_systemStateSettings->lteLinkCtrlRtt = recvLteTSATime - sendTSUTime;
+		p_systemStateSettings->lteLinkRtt = p_systemStateSettings->lteLinkCtrlRtt;//we will overwrite the value after the data owd measurement end.
 		lteSnAndTimeArray.clear();
 		tsu_success_flag = 1;
 	}
@@ -2559,13 +2725,16 @@ void SendTSUMsg::sendTSUMsg()
 
 void SendTSUMsg::thread_sendTSUMsg()
 {
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < 100; ++i)
 	{
+		if (p_systemStateSettings->wifiSplitFactor == 0 || p_systemStateSettings->lteSplitFactor == 0 ) //keep sending TSU if link failure is detected
+		  i--;
 		if (tsu_busy_flag)
 		{
+			tsu_recv_cv.notify_one();
 			try
 			{
-				std::this_thread::sleep_for(std::chrono::milliseconds(2000));  		//sleep(2); //sleep 2 seconds
+				std::this_thread::sleep_for(std::chrono::milliseconds(5));  		//sleep(2); //sleep 2 seconds
 			} 
 			catch (const char* e)
 			{

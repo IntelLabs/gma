@@ -285,8 +285,9 @@ void vnic_tun_send_ctl_ack(struct sockaddr_in remote_addr, char *msg, int len)
 			}
 
 		}
-		printf("[ok] [client index : %d, array index: %d]Got TSU, wifi traffic size: %d, lte traffic size: %d, total traffic size: %d, TSU sn: %d, rt_traffic_over_lte :%d\n",
+	/*	printf("[ok] [client index : %d, array index: %d]Got TSU, wifi traffic size: %d, lte traffic size: %d, total traffic size: %d, TSU sn: %d, rt_traffic_over_lte :%d\n",
 			client_index, array_index, client_info_arrays[array_index].tsu_wifi_split_size, client_info_arrays[array_index].tsu_lte_split_size, client_info_arrays[array_index].tsu_traffic_split_threshold, ntohs(tsu->seq_num), client_info_arrays[array_index].rt_traffic_over_lte);
+	*/
 	}
 	else if (msg[0] == ACK_VNIC) {
 		struct vnic_ack* vack = (struct vnic_ack*)msg;
@@ -426,7 +427,7 @@ END:
 
 void * vnic_tun_read_thread(void * lpParam)
 {
-	u_int n_Bytes = 0;
+	int n_Bytes = 0;
 	while (g_bServerRun) {
 
 		if (g_cManager->PrepareTxBuffer() == false)//not ready: buffer full
@@ -435,10 +436,17 @@ void * vnic_tun_read_thread(void * lpParam)
 		}
 		else
 		{
-			n_Bytes = tun_read(tun.tun_fd, g_cManager->GetTxBuffer(), MAX_PACKET_SIZE);
+
+			n_Bytes = read(tun.tun_fd, g_cManager->GetTxBuffer(),  MAX_PACKET_SIZE);
+		//	n_Bytes = tun_read(tun.tun_fd, g_cManager->GetTxBuffer(), MAX_PACKET_SIZE);
+			//printf("\n ****** pkt size %d *****\n", n_Bytes);
 			if (n_Bytes <= 0)
+			{
+			    usleep(10);	
 				continue;
-			g_cManager->ProcessPacket(n_Bytes);
+			}
+			else 
+				g_cManager->ProcessPacket(n_Bytes);
 		}
 
 	}

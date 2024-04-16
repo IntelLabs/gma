@@ -321,6 +321,9 @@ void VirtualWebsockets::RecvNCMM()
             else if (msg_type.compare("mx_session_resume_rsp") == 0)
             {
                 p_systemStateSettings->gStartTime = 0x7FFFFFFF - p_systemStateSettings->update_current_time_params() & 0x7FFFFFFF;
+                //time synced, request probe to update ctr owd.
+                p_systemStateSettings->GMAIPCMessage(2,0,0,false,0); //wifi probe
+                p_systemStateSettings->GMAIPCMessage(3,0,0,false,0); //lte probe
                 std::stringstream ss;
                 ss << "virtual [ncm->ccm] mx_session_resume_rsp" << ":" << p_systemStateSettings->gStartTime << "\n";
                 p_systemStateSettings->PrintLogs(ss);

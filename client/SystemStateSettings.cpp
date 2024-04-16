@@ -52,6 +52,8 @@ SystemStateSettings::SystemStateSettings()
     OWD_CONVERGE_THRESHOLD = 0.1;         // if the owd difference of two consecutive measure interval is smaller than this threshold, we assume measurement converges.
     MAX_MEASURE_INTERVAL_NUM = 10;        // max allowed measurement interval if the results do not converges.
     MIN_PACKET_NUM_PER_INTERVAL = 300;    //when a interval end (due to time expires) without enough packets, it will be extended until more than this number of packets are received
+    MIN_PACKET_BURST_PER_INTERVAL = 2;    // a measurement interval needs at MIN_PACKET_BURST_PER_INTERVAL * paramL packets to end. e.g., 8*32=256
+
     MAX_MEASURE_INTERVAL_DURATION = 2000; //1s
     MIN_MEASURE_INTERVAL_DURATION = 100;  //100 ms
     BURST_SAMPLE_FREQUENCY = 3;           //take one measurement very BUSRT_SAMPLE_FREQUENCY for packet burst rate estimate
@@ -64,7 +66,7 @@ SystemStateSettings::SystemStateSettings()
     TOLERANCE_DELAY_BOUND = 5;
     TOLERANCE_DELAY_H = 8;                    //decrease wifi
     TOLERANCE_DELAY_L = 4;                    //increase wifi
-    SPLIT_ALGORITHM = 2;                      //1: delay algorithm; 2: delay and loss algorithm
+    SPLIT_ALGORITHM = 3;                      //1: delay algorithm; 2: delay and loss algorithm; 3: gma2 algorithm
     INITIAL_PACKETS_BEFORE_LOSS = 1000000000; //10^9
     //end/////////////////////////////////////////
 
@@ -101,16 +103,20 @@ SystemStateSettings::SystemStateSettings()
 
     lastReceiveWifiWakeUpReq = 0;
     lastReceiveLteWakeUpReq = 0;
-    lastReceiveLteProbe = 0;
-    lastReceiveWifiProbe = 0;
+    lastReceiveLteProbeAck = 0;
+    lastReceiveWifiProbeAck = 0;
     lastReceiveWifiPkt = 0;
     lastReceiveLtePkt = 0;
     wifiProbeTh = INT_MAX; //the minimum gap between last receive and last transmit astReceiveWifiPkt
     lastSendWifiProbe = 0;
     lastSendLteProbe = 0;
     wifiLinkRtt = 1000;
+    wifiLinkCtrlRtt = 1000;
+    wifiLinkCtrlOwd = INT_MAX;
     wifiLinkMaxRtt = 0;
     lteLinkRtt = 2000;
+    lteLinkCtrlRtt = 2000;
+    lteLinkCtrlOwd = INT_MAX;
     splitEnable = 0;
 
     lteReceiveNrtBytes = 0;
@@ -142,6 +148,7 @@ SystemStateSettings::SystemStateSettings()
     wifiPacketNum = 0; //control and data
     wifiOwdMax = INT_MIN;
     wifiOwdMin = INT_MAX;
+    wifiOwdMinLongTerm = INT_MAX;
     wifiInorderPacketNum = 0;  //data only
     wifiMissingPacketNum = 0;  //data only
     wifiAbnormalPacketNum = 0; //data only
@@ -160,6 +167,7 @@ SystemStateSettings::SystemStateSettings()
     ltePacketNum = 0; //control and data
     lteOwdMax = INT_MIN;
     lteOwdMin = INT_MAX;
+    lteOwdMinLongTerm = INT_MAX;
     lteInorderPacketNum = 0;  //data only
     lteMissingPacketNum = 0;  //data only
     lteAbnormalPacketNum = 0; //data only
@@ -288,8 +296,8 @@ void SystemStateSettings::updateSystemSettings()
 
     lastReceiveWifiWakeUpReq = 0;
     lastReceiveLteWakeUpReq = 0;
-    lastReceiveLteProbe = 0;
-    lastReceiveWifiProbe = 0;
+    lastReceiveLteProbeAck = 0;
+    lastReceiveWifiProbeAck = 0;
     lastReceiveWifiPkt = 0;
     lastReceiveLtePkt = 0;
     wifiProbeTh = INT_MAX; //the minimum gap between last receive and last transmit astReceiveWifiPkt
@@ -299,8 +307,12 @@ void SystemStateSettings::updateSystemSettings()
     lastSendWifiTsu = 0;
 
     wifiLinkRtt = 1000;
+    wifiLinkCtrlRtt = 1000;
+    wifiLinkCtrlOwd = INT_MAX;
     wifiLinkMaxRtt = 0;
     lteLinkRtt = 2000;
+    lteLinkCtrlRtt = 2000;
+    lteLinkCtrlOwd = INT_MAX;
     splitEnable = 0;
 
     lteReceiveNrtBytes = 0;
@@ -322,6 +334,7 @@ void SystemStateSettings::updateSystemSettings()
     wifiPacketNum = 0; //control and data
     wifiOwdMax = INT_MIN;
     wifiOwdMin = INT_MAX;
+    wifiOwdMinLongTerm = INT_MAX;
     wifiInorderPacketNum = 0;  //data only
     wifiMissingPacketNum = 0;  //data only
     wifiAbnormalPacketNum = 0; //data only
@@ -339,6 +352,7 @@ void SystemStateSettings::updateSystemSettings()
     ltePacketNum = 0; //control and data
     lteOwdMax = INT_MIN;
     lteOwdMin = INT_MAX;
+    lteOwdMinLongTerm = INT_MAX;
     lteInorderPacketNum = 0;  //data only
     lteMissingPacketNum = 0;  //data only
     lteAbnormalPacketNum = 0; //data only

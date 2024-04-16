@@ -586,6 +586,8 @@ bool ServiceManager::startService()
 {
     g_systemStateSettings->LogFileOpen();
     g_systemStateSettings->wifiLinkRtt = 1000; //reset probe rtx timeout
+    g_systemStateSettings->wifiLinkCtrlRtt = 1000;
+    g_systemStateSettings->wifiLinkCtrlOwd = INT_MAX;
     g_systemStateSettings->wifiProbeTimeout = 1000;
     configureLteChannel();
     if (lteChannel != GMA_INVALID_SOCKET)
@@ -688,6 +690,10 @@ void ServiceManager::updateWifiChannel()
         dataSend.updataWifiChannel(wifiChannel);
         controlManager.UpdateWifiParams(wifiChannel, wifiServer);
     }
+    else
+    {
+        printf("\n update Wi-Fi channel failed \n");
+    }
 }
 
 void ServiceManager::updateLteChannel()
@@ -698,6 +704,10 @@ void ServiceManager::updateLteChannel()
         dataReceive.updataLteChannel(lteChannel);
         dataSend.updataLteChannel(lteChannel);
         controlManager.UpdateLteParams(lteChannel, lteServer);
+    }
+    else
+    {
+        printf("\n update LTE channel failed \n");
     }
 }
 
@@ -1012,6 +1022,9 @@ void ServiceManager::onAvailable(char *interface)
             std::cout << "on Available wifi \n";
             g_systemStateSettings->gWifiFlag = true;
             g_systemStateSettings->wifiLinkRtt = 1000; //reset probe rtx timeout
+            g_systemStateSettings->wifiLinkCtrlRtt = 1000;
+            g_systemStateSettings->wifiLinkCtrlOwd = INT_MAX;
+
             g_systemStateSettings->wifiProbeTimeout = 1000;
             if (wifiTcpReceive.tcpReceiveOn)
             {

@@ -27,7 +27,8 @@ load_root_certificates(ssl::context& ctx, boost::system::error_code& ec)
     ctx.add_certificate_authority(
         boost::asio::buffer(cert.data(), cert.size()), ec);
     if (ec){
-        return ;
+        printf("\n error \n");
+		return ;
     }
 }
 

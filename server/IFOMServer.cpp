@@ -100,8 +100,16 @@ pthread_t	m_wifi_transmit_thread_id;
 pthread_t 	m_rx_buffer_ouput_thread_id; 
 pthread_t 	m_measurement_thread_id;
 
+static const int REVERSE_BITS_INDEX8[8] = {0,4,2,6,1,5,3,7};
+static const int REVERSE_BITS_INDEX16[16] = {0,8,4,12,2,10,6,14,1,9,5,13,3,11,7,15};
 static const int REVERSE_BITS_INDEX32[32] = {0, 16,  8, 24,  4, 20, 12, 28,  2, 18, 10, 26,  6, 22, 14, 30,  1, 17,
   9, 25,  5, 21, 13, 29,  3, 19, 11, 27,  7, 23, 15, 31}; //reversed index for 32 bits
+static const int REVERSE_BITS_INDEX64[64] = {0,32,16,48,8,40,24,56,4,36,20,52,12,44,28,60,2,34,18,50,10,42,
+26,58,6,38,22,54,14,46,30,62,1,33,17,49,9,41,25,57,5,37,21,53,13,45,29,61,3,35,19,51,11,43,27,59,7,39,23,55,15,47,31,63};
+static const int REVERSE_BITS_INDEX128[128] = {0,64,32,96,16,80,48,112,8,72,40,104,24,88,56,120,4,68,36,100,20,84,
+52,116,12,76,44,108,28,92,60,124,2,66,34,98,18,82,50,114,10,74,42,106,26,90,58,122,6,70,38,102,22,86,54,118,14,78,
+46,110,30,94,62,126,1,65,33,97,17,81,49,113,9,73,41,105,25,89,57,121,5,69,37,101,21,85,53,117,13,77,45,109,29,93,
+61,125,3,67,35,99,19,83,51,115,11,75,43,107,27,91,59,123,7,71,39,103,23,87,55,119,15,79,47,111,31,95,63,127};
 
 typedef void * (*THREADFUNCPTR)(void *);
 
@@ -549,7 +557,7 @@ void WakeupMsgOverWifi(u_int array_index) {
 }
 
 
-void ClientManager::ProcessPacket(u_int bytes)
+void ClientManager::ProcessPacket(int bytes)
 {
 	update_current_time_params();//this function will update the global variable g_current_time_s and g_current_time_ms
 	//find lte index from ip address
@@ -663,29 +671,42 @@ void ClientManager::ProcessPacket(u_int bytes)
 						WakeupMsgOverLte(array_index);//wifi split ratio = 0, wakeup msg over lte
 					}
 
-					if (client_info_arrays[array_index].tsu_traffic_split_threshold == 32) {//L = 32, use randomized index
-						if (REVERSE_BITS_INDEX32[client_info_arrays[array_index].tsu_split_count] < client_info_arrays[array_index].tsu_wifi_split_size) {//first k1 over WiFI, randomized
+					int temp1 = (int)(10000*log2((double)client_info_arrays[array_index].tsu_traffic_split_threshold));
+					int temp2 = client_info_arrays[array_index].tsu_split_count;
+					switch(temp1) {
+						case 30000: temp2 = REVERSE_BITS_INDEX8[temp2]; break;
+						case 40000: temp2 = REVERSE_BITS_INDEX16[temp2]; break;
+						case 50000: temp2 = REVERSE_BITS_INDEX32[temp2]; break;
+						case 60000: temp2 = REVERSE_BITS_INDEX64[temp2]; break;
+						case 70000: temp2 = REVERSE_BITS_INDEX128[temp2]; break;
+						default: break; 
+					}
+
+					//if (client_info_arrays[array_index].tsu_traffic_split_threshold == 32) {//L = 32, use randomized index
+						//if (REVERSE_BITS_INDEX32[client_info_arrays[array_index].tsu_split_count] < client_info_arrays[array_index].tsu_wifi_split_size) {//first k1 over WiFI, randomized
+					    if (temp2 < client_info_arrays[array_index].tsu_wifi_split_size) {//first k1 over WiFI, randomized
 							AddToWifiBuffer(array_index, bytes, flowId, pkt_pri, client_info_arrays[array_index].dl_sn, ip_h->tos);
 							//printf("wifi send: %d\n",client_info_arrays[array_index].tsu_split_count);
 						}
 
-						if (client_info_arrays[array_index].tsu_traffic_split_threshold - REVERSE_BITS_INDEX32[client_info_arrays[array_index].tsu_split_count] <= client_info_arrays[array_index].tsu_lte_split_size) {//K2 over LTE, randomized
+						//if (client_info_arrays[array_index].tsu_traffic_split_threshold - REVERSE_BITS_INDEX32[client_info_arrays[array_index].tsu_split_count] <= client_info_arrays[array_index].tsu_lte_split_size) {//K2 over LTE, randomized
+						if (client_info_arrays[array_index].tsu_traffic_split_threshold - temp2 <= client_info_arrays[array_index].tsu_lte_split_size) {//K2 over LTE, randomized
 							AddToLteBuffer(array_index, bytes, flowId, pkt_pri, client_info_arrays[array_index].dl_sn, ip_h->tos);
 							//printf("lte send: %d\n", client_info_arrays[array_index].tsu_split_count);
 						}
 
-					}
-					else {//don't use randomized index
-						if (client_info_arrays[array_index].tsu_split_count < client_info_arrays[array_index].tsu_wifi_split_size) {//first k1 over WiFI
-							AddToWifiBuffer(array_index, bytes, flowId, pkt_pri, client_info_arrays[array_index].dl_sn, ip_h->tos);
-							//printf("wifi send: %d\n",client_info_arrays[array_index].tsu_split_count);
-						}
+				//	}
+				//	else {//don't use randomized index
+				//		if (client_info_arrays[array_index].tsu_split_count < client_info_arrays[array_index].tsu_wifi_split_size) {//first k1 over WiFI
+				//			AddToWifiBuffer(array_index, bytes, flowId, pkt_pri, client_info_arrays[array_index].dl_sn, ip_h->tos);
+				//			//printf("wifi send: %d\n",client_info_arrays[array_index].tsu_split_count);
+				//		}
 
-						if (client_info_arrays[array_index].tsu_traffic_split_threshold - client_info_arrays[array_index].tsu_split_count <= client_info_arrays[array_index].tsu_lte_split_size) {//last K2 over LTE
-							AddToLteBuffer(array_index, bytes, flowId, pkt_pri, client_info_arrays[array_index].dl_sn, ip_h->tos);
-							//printf("lte send: %d\n", client_info_arrays[array_index].tsu_split_count);
-						}
-					}
+				//		if (client_info_arrays[array_index].tsu_traffic_split_threshold - client_info_arrays[array_index].tsu_split_count <= client_info_arrays[array_index].tsu_lte_split_size) {//last K2 over LTE
+				//			AddToLteBuffer(array_index, bytes, flowId, pkt_pri, client_info_arrays[array_index].dl_sn, ip_h->tos);
+				//			//printf("lte send: %d\n", client_info_arrays[array_index].tsu_split_count);
+				//		}
+				//	}
 
 					client_info_arrays[array_index].tsu_split_count++;// from 0 to L-1.
 					if (client_info_arrays[array_index].tsu_split_count >= client_info_arrays[array_index].tsu_traffic_split_threshold) {// if counter == L, set it to 0
@@ -946,7 +967,7 @@ void config_per_user_queue(int array_index)
 	//printf("[QOS] %s\n", ss.str().c_str());
 	popen_no_msg(ss.str().c_str(), ss.str().size());
 
-	int wifiQueueLimit = max((u_int)10, WIFI_DELAY_MS); //use pfifo and the unit is pkt (not bytes)
+	int wifiQueueLimit = 200; // max((u_int)10, WIFI_DELAY_MS); //use pfifo and the unit is pkt (not bytes)
 
 	//set the queue size, WIFI_DELAY_MS controls the queue size
 	ss.str(std::string());
@@ -959,8 +980,8 @@ void config_per_user_queue(int array_index)
 	//printf("[QOS] %s\n", ss.str().c_str());
 	popen_no_msg(ss.str().c_str(), ss.str().size());
 
-
-	int lteQueueLimit = max((u_int)10, LTE_DELAY_MS);
+	
+	int lteQueueLimit = 200; // max((u_int)10, LTE_DELAY_MS);
 
 	ss.str(std::string());
 	ss << "tc qdisc add dev " << net_cfg.lte_interface << " parent 1:" << hex << (lteRtFlowBit + clientId) << " handle " << (lteRtFlowBit + clientId) << dec << ":0 pfifo limit " << lteQueueLimit;
@@ -974,14 +995,16 @@ void config_per_user_queue(int array_index)
 	popen_no_msg(ss.str().c_str(), ss.str().size());
 
 
-	int wifi_delay = 0; //ms
-    ss.str(std::string());
+	int wifi_delay = WIFI_DELAY_MS; //ms
+    client_info_arrays[array_index].wifi_owd_fixed = wifi_delay;
+	ss.str(std::string());
 	ss << "tc qdisc add dev " << wlan_interface << " parent " << hex << (wifiNrtFlowBit + clientId) << dec << ":1 netem delay " << wifi_delay << "ms";
 	//printf("[QOS] %s\n", ss.str().c_str());
 	popen_no_msg(ss.str().c_str(), ss.str().size());
+    
 
-
-	int lte_delay = 0; //ms
+	int lte_delay = LTE_DELAY_MS; //ms
+	client_info_arrays[array_index].lte_owd_fixed = lte_delay;
 	ss.str(std::string());
 	ss << "tc qdisc add dev " << net_cfg.lte_interface << " parent " << hex << (lteNrtFlowBit + clientId) << dec << ":1 netem delay " << lte_delay << "ms";
 	//printf("[QOS] %s\n", ss.str().c_str());

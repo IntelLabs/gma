@@ -23,6 +23,8 @@ public:
     GMASocket lteudp_fd = GMA_INVALID_SOCKET;
     struct sockaddr_in wifiServer;
     struct sockaddr_in lteServer;
+    int wifi_server_ip = 0;
+    int lte_server_ip = 0;
     
     IPHeader ipHeader;
     GMADataHeader gmaDataHeader;

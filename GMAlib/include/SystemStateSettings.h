@@ -8,7 +8,7 @@
 #include <string>
 #include <thread>
 #include "Header.h"
-
+#include <climits>
 class SystemStateSettings{
 public:
     
@@ -46,6 +46,7 @@ public:
     double OWD_CONVERGE_THRESHOLD;// if the owd difference of two consecutive measure interval is smaller than this threshold, we assume measurement converges.
     int MAX_MEASURE_INTERVAL_NUM; // max allowed measurement interval if the results do not converges.
     int MIN_PACKET_NUM_PER_INTERVAL; //when a interval end (due to time expires) without enough packets, it will be extended until more than this number of packets are received
+    int MIN_PACKET_BURST_PER_INTERVAL; // a measurement interval needs at MIN_PACKET_BURST_PER_INTERVAL * paramL packets to end. e.g., 2*128
     long MAX_MEASURE_INTERVAL_DURATION; //1s
     long MIN_MEASURE_INTERVAL_DURATION; //100 ms
     int BURST_SAMPLE_FREQUENCY; //take one measurement very BUSRT_SAMPLE_FREQUENCY for packet burst rate estimate
@@ -58,13 +59,14 @@ public:
     int TOLERANCE_DELAY_BOUND;
     int TOLERANCE_DELAY_H; //decrease wifi
     int TOLERANCE_DELAY_L; //increase wifi
-    int SPLIT_ALGORITHM; //1: delay algorithm; 2: delay and loss algorithm
+    int SPLIT_ALGORITHM; //1: delay algorithm; 2: delay and loss algorithm; 3: gma2 algorithm
     int INITIAL_PACKETS_BEFORE_LOSS;  //10^9
     //end/////////////////////////////////////////
 
 
-
-
+    bool m_adaptiveSplittingBurst = true;
+    int minOwdMeasurementInterval = 5000; //min OWD measurement interval (ms)
+    int minSplitAdjustmentStep = 1;  // m_relocateScaler = minSplitAdjustmentStep/splittingBurst
     int minPktsample;  //minimum number of samples for a valid OWD measurement
     int wifiOwdOffset; //we will compare wifiOwd + wifiOwdOffset with lteOwd. If we want to allocate more traffic over wifi, set this offset to be a negative value.
     int reorderRepeatTimer;  //unit: ms
@@ -99,8 +101,8 @@ public:
 
     int lastReceiveWifiWakeUpReq;
     int lastReceiveLteWakeUpReq;
-    int lastReceiveLteProbe;
-    int lastReceiveWifiProbe;
+    int lastReceiveLteProbeAck;
+    int lastReceiveWifiProbeAck;
     int lastReceiveWifiPkt;
     int lastReceiveLtePkt;
     int wifiProbeTh; //the minimum gap between last receive and last transmit astReceiveWifiPkt
@@ -108,9 +110,15 @@ public:
     int lastSendLteProbe;
     int lastSendLteTsu;
     int lastSendWifiTsu;
-    int wifiLinkRtt;
+    int wifiLinkRtt = 1000; //wifiLinkRtt = wifiLinkCtrlRtt + (average owd measured from data - wifiLinkCtrlOwd)
+    int wifiLinkFailureFlag = 0; //0: unknown  1: active 2: inactive (failure) 
+    int lteLinkFailureFlag = 0; //0: unknown  1: active 2: inactive (failure) 
+    int wifiLinkCtrlRtt;
+    int wifiLinkCtrlOwd;
     int wifiLinkMaxRtt;
-    int lteLinkRtt;
+    int lteLinkRtt = 1000; //lteLinkRtt = lteLinkCtrlRtt + (average owd measured from data - lteLinkCtrlOwd)
+    int lteLinkCtrlRtt;
+    int lteLinkCtrlOwd;
     int splitEnable;
 
     long lteReceiveNrtBytes;
@@ -142,8 +150,12 @@ public:
     //measurement manager measures the following parameters, they are normal packets
     long wifiOwdSum = 0; //control and data
     long wifiPacketNum = 0; //control and data
+    long wifiPacketNum_last_interval = 0; //control and data
+    long wifiRx_interval = INT_MAX; 
+    long lteRx_interval = INT_MAX; 
     int wifiOwdMax;
     int wifiOwdMin;
+    int wifiOwdMinLongTerm;
     int wifiInorderPacketNum; //data only
     int wifiMissingPacketNum; //data only
     int wifiAbnormalPacketNum; //data only
@@ -162,6 +174,7 @@ public:
     long ltePacketNum; //control and data
     int lteOwdMax;
     int lteOwdMin;
+    int lteOwdMinLongTerm;
     int lteInorderPacketNum; //data only
     int lteMissingPacketNum; //data only
     int lteAbnormalPacketNum; //data only
@@ -193,6 +206,9 @@ public:
     //and also reset wifiIndexChangeAlpha to 0
     int wifiSplitFactor; // k1 wifi
     int lteSplitFactor;// k2 lte
+    long lastSplittingTime = 0; //traffic splitting stop time 
+    long resetOWDoffsetTh_s = 30; //reset TX OWD offset 30 seconds after start sending traffic over a single link
+    bool resetOWDoffsetFlag = false; //a flag to control resetting TX OWD offset 
     int gLvalue;
     int wifiIndexChangeAlpha; // +n stand for wifi index continuous increases n times, -m stands for wifi index continuous decreases for m times
     // end measurement manager
@@ -203,7 +219,7 @@ public:
     bool ENABLE_LINK_REORDERING;
     int maxReorderingDelay; //unit: ms
     long reorderStopTime;
-    int currentTimeMs; //unit: ms
+    int currentTimeMs; //unit: ms --> when a connection is established, the currentTimeMs starts from 0. E.g., currentTimeMs = currentSysTimeMs + gStartTime. Use this for computing time stamp, one-way delay etc.
     int currentSysTimeMs; //unit: ms
   
     int numOfTsuMessages; // the number of transmitted TSU messages

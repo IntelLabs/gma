@@ -66,6 +66,10 @@ void DataReceive::wakeupSelect()
         if (sendto(udpLoop, (char *)buf, 1, 0, (struct sockaddr *)&udpAddr, sizeof(udpAddr)) <= 0)
          printf("\n sendto error \n");
     }
+    else
+    {
+        printf("\n line 71 data receive wakeupSelect error\n");
+    }
 }
 
 void DataReceive::listenSockets()
@@ -75,6 +79,10 @@ void DataReceive::listenSockets()
     GMASocket nsocks;
     int nBytes;
     char pipebuff[100];
+    struct timeval tv;
+    tv.tv_usec = 5000000.0;    
+    tv.tv_sec = 1.0;
+
     while ((p_systemStateSettings->gWifiFlag || p_systemStateSettings->gLteFlag) && p_systemStateSettings->isControlManager) //gSystemOn
     {
 
@@ -85,23 +93,37 @@ void DataReceive::listenSockets()
             FD_SET(wifiudp_fd, &socks);
         if (udpLoop != GMA_INVALID_SOCKET)
             FD_SET(udpLoop, &socks);
+        else
+        {
+            while(!setupUdpSocket())
+                    {
+                        usleep(1000); //retry
+                    } //suppose success
+            FD_SET(udpLoop, &socks);
+        }
 
         nsocks = std::max(std::max(wifiudp_fd, lteudp_fd), udpLoop) + 1;
 
-        if (select(nsocks, &socks, (fd_set *)0, (fd_set *)0, 0) > 0)
+        if (select(nsocks, &socks, (fd_set *)0, (fd_set *)0, 0) >= 0)
         {
 
             if (wifiudp_fd != GMA_INVALID_SOCKET && FD_ISSET(wifiudp_fd, &socks))
             {
                 char *packet = reorderingManager.requestBuffer();
                 nBytes = recvfrom(wifiudp_fd, packet, 1500, 0, NULL, NULL);
-                receiveWifiPacket(packet);
+                if (nBytes > 0 )
+                  receiveWifiPacket(packet);
+                else
+                 printf("\n receive wifi error\n");
             }
             if (lteudp_fd != GMA_INVALID_SOCKET && FD_ISSET(lteudp_fd, &socks))
             {
                 char *packet = reorderingManager.requestBuffer();
                 nBytes = recvfrom(lteudp_fd, packet, 1500, 0, NULL, NULL);
-                receiveLtePacket(packet);
+                if (nBytes > 0)
+                   receiveLtePacket(packet);
+                else
+                  printf("\n receive LTE error\n");
             }
             if (udpLoop != GMA_INVALID_SOCKET && FD_ISSET(udpLoop, &socks))
             {
@@ -110,10 +132,13 @@ void DataReceive::listenSockets()
                 ret = recv(udpLoop, udpBuf, 100, 0);
                 if (ret <= 0)
                 {
-                    //connection gracefully closed
+                    printf("\n reset udploop ....\n");
                     p_systemStateSettings->closegmasocket(udpLoop);
                     udpLoop = GMA_INVALID_SOCKET;
-                    setupUdpSocket(); //suppose success
+                    while(!setupUdpSocket())
+                    {
+                        usleep(1000); //retry
+                    } //suppose success
                 }
                 std::stringstream logs;
                 logs.str("");
@@ -176,7 +201,15 @@ void DataReceive::receiveWifiControl(char *packet)
                 else
                 {
                     p_systemStateSettings->gDynamicSplitFlag = 1;
-                    p_systemStateSettings->SPLIT_ALGORITHM = tscMessage.getDLDynamicSplittingEnabled();
+                    if (tscMessage.getDLDynamicSplittingEnabled() >= 3)
+                    {
+                     p_systemStateSettings->SPLIT_ALGORITHM = 3;
+                     p_systemStateSettings->minSplitAdjustmentStep =  tscMessage.getDLDynamicSplittingEnabled()  - 3;  //   
+                    }
+                    else
+                    {
+                      p_systemStateSettings->SPLIT_ALGORITHM = tscMessage.getDLDynamicSplittingEnabled();
+                    }
                 }
                 p_systemStateSettings->wifiSplitFactor = tscMessage.getK1();
                 p_systemStateSettings->lteSplitFactor = tscMessage.getK2();
@@ -344,7 +377,7 @@ void DataReceive::receiveWifiControl(char *packet)
             ss << "receive WIFI probe ack! \n";
             p_systemStateSettings->PrintLogs(ss);
             //this is the prob ack
-            p_systemStateSettings->lastReceiveWifiProbe = p_systemStateSettings->currentSysTimeMs;
+            p_systemStateSettings->lastReceiveWifiProbeAck = p_systemStateSettings->currentSysTimeMs;
 
             //controlManager.receiveWifiProbeAck(seqNumber);
             p_systemStateSettings->GMAIPCMessage(6, seqNumber, 0, false, 0);
@@ -352,6 +385,7 @@ void DataReceive::receiveWifiControl(char *packet)
             {
                 int wifiowd = p_systemStateSettings->currentTimeMs - vnicAck.getTimeStampMillis();
                 (measurementManager.wifi)->updateLastPacketOwd(wifiowd);
+                p_systemStateSettings->wifiLinkCtrlOwd = wifiowd;
             }
             break;
         }
@@ -364,23 +398,47 @@ void DataReceive::receiveWifiControl(char *packet)
     {
         seqNumber = vnicAck.getAckNum();
         p_systemStateSettings->GMAIPCMessage(4, seqNumber, p_systemStateSettings->currentSysTimeMs, false, 0); //controlManager.receiveWifiTSA(seqNumber, p_systemStateSettings->currentSysTimeMs);
-        
+
         vnicTSA.init((unsigned char *)packet, dataOffset + p_systemStateSettings->sizeofDlGMAMessageHeader); //GMA header + ip header + udp header
 
-        if (!measurementManager.measurementOn)
+        int temp1  = vnicTSA.getWiFiTxOffset();
+        int temp2  = vnicTSA.getLteTxOffset();
+ 
+        if (!measurementManager.measureCycleStarted())
+        {
+
+          if (temp1 != 0 || temp2 != 0)
+          {
+            p_systemStateSettings->wifiOwdOffset = p_systemStateSettings->wifiOwdOffset + temp1 - temp2;
+            p_systemStateSettings->wifiLinkRtt = p_systemStateSettings->wifiLinkRtt + temp1;
+            p_systemStateSettings->lteLinkRtt = p_systemStateSettings->lteLinkRtt + temp2;
+
+            if (INT_MAX != p_systemStateSettings->wifiOwdMinLongTerm)
             {
-                //measurement cycle not started yet and the receive TSA sequence is bigger than last one
-                measurementManager.measureCycleStart(vnicTSA.getStartSn1()); //start next measurement cycle from start-Sn
+                p_systemStateSettings->wifiOwdMinLongTerm = p_systemStateSettings->wifiOwdMinLongTerm + temp1;
             }
-        
-        p_systemStateSettings->wifiOwdOffset = p_systemStateSettings->wifiOwdOffset + vnicTSA.getWiFiTxOffset() - vnicTSA.getLteTxOffset(); 
-			
-	    
+            else
+            {
+                std::cout<< " [ERROR] p_systemStateSettings->wifiOwdMinLongTerm not configured! " << std::endl;
+            }
+            if (INT_MAX != p_systemStateSettings->lteOwdMinLongTerm)
+            {
+                p_systemStateSettings->lteOwdMinLongTerm = p_systemStateSettings->lteOwdMinLongTerm + temp2;
+            }
+            else
+            {
+                std::cout<< " [ERROR] p_systemStateSettings->lteOwdMinLongTerm not configured! " << std::endl;
+            }
+          }
+          measurementManager.measureCycleStart(vnicTSA.getStartSn1()); //start next measurement cycle from start-Sn
+        }
+ 
         int wifiowd = p_systemStateSettings->currentTimeMs - vnicTSA.getTimeStampMillis();
             
         if (p_systemStateSettings->gStartTime >= 0 && abs(wifiowd) < 10000)
         {
             (measurementManager.wifi)->updateLastPacketOwd(wifiowd);
+            p_systemStateSettings->wifiLinkCtrlOwd = wifiowd;
         }
         break;
     }
@@ -438,8 +496,18 @@ void DataReceive::receiveLteControl(char *packet)
                     p_systemStateSettings->gDynamicSplitFlag = 0;
                 else
                 {
-                    p_systemStateSettings->gDynamicSplitFlag = 1;
-                    p_systemStateSettings->SPLIT_ALGORITHM = tscMessage.getDLDynamicSplittingEnabled();
+                     p_systemStateSettings->gDynamicSplitFlag = 1;
+                    if (tscMessage.getDLDynamicSplittingEnabled() >= 3)
+                    {
+                     p_systemStateSettings->SPLIT_ALGORITHM = 3;
+                     p_systemStateSettings->minSplitAdjustmentStep =  tscMessage.getDLDynamicSplittingEnabled()  - 3;  //   
+                    }
+                    else
+                    {
+                      p_systemStateSettings->SPLIT_ALGORITHM = tscMessage.getDLDynamicSplittingEnabled();
+                    }
+
+                    //p_systemStateSettings->SPLIT_ALGORITHM = tscMessage.getDLDynamicSplittingEnabled();
                 }
             //    p_systemStateSettings->wifiSplitFactor = tscMessage.getK1();
             //    p_systemStateSettings->lteSplitFactor = tscMessage.getK2();
@@ -603,13 +671,14 @@ void DataReceive::receiveLteControl(char *packet)
             std::stringstream ss;
             ss << "receive lte probes ack\n";
             p_systemStateSettings->PrintLogs(ss);
-            p_systemStateSettings->lastReceiveLteProbe = p_systemStateSettings->currentSysTimeMs;
+            p_systemStateSettings->lastReceiveLteProbeAck = p_systemStateSettings->currentSysTimeMs;
             //controlManager.receiveLteProbeAck(seqNumber);
             p_systemStateSettings->GMAIPCMessage(7, seqNumber, 0, false, 0);
             if (p_systemStateSettings->gStartTime >= 0)
             {
                 int lteowd = p_systemStateSettings->currentTimeMs - vnicAck.getTimeStampMillis();
                 (measurementManager.lte)->updateLastPacketOwd(lteowd);
+                p_systemStateSettings->lteLinkCtrlOwd = lteowd;
             }
             break;
         }
@@ -621,17 +690,43 @@ void DataReceive::receiveLteControl(char *packet)
     {
         p_systemStateSettings->GMAIPCMessage(5, seqNumber, p_systemStateSettings->currentSysTimeMs, false, 0); //controlManager.receiveLteTSA(seqNumber, p_systemStateSettings->currentSysTimeMs);
         vnicTSA.init((unsigned char *)packet, dataOffset + p_systemStateSettings->sizeofDlGMAMessageHeader); //GMA header + ip header + udp header
-        if (!measurementManager.measurementOn)
-            {
-                measurementManager.measureCycleStart(vnicTSA.getStartSn1()); //start next measurement cycle from start-Sn
-            }
+       
+        //p_systemStateSettings->wifiOwdOffset = p_systemStateSettings->wifiOwdOffset + vnicTSA.getWiFiTxOffset() - vnicTSA.getLteTxOffset(); 
 
-        p_systemStateSettings->wifiOwdOffset = p_systemStateSettings->wifiOwdOffset + vnicTSA.getWiFiTxOffset() - vnicTSA.getLteTxOffset(); 
+        int temp1  = vnicTSA.getWiFiTxOffset();
+        int temp2  = vnicTSA.getLteTxOffset();
+        if (!measurementManager.measureCycleStarted())
+        {
+
+          if (temp1 != 0 || temp2 != 0)
+          {
+            p_systemStateSettings->wifiOwdOffset = p_systemStateSettings->wifiOwdOffset + temp1 - temp2;
+            if (INT_MAX != p_systemStateSettings->wifiOwdMinLongTerm)
+            {
+                p_systemStateSettings->wifiOwdMinLongTerm = p_systemStateSettings->wifiOwdMinLongTerm + temp1;
+            }
+            else
+            {
+                std::cout<< " [ERROR] p_systemStateSettings->wifiOwdMinLongTerm not configured! " << std::endl;
+            }
+            if (INT_MAX != p_systemStateSettings->lteOwdMinLongTerm)
+            {
+                p_systemStateSettings->lteOwdMinLongTerm = p_systemStateSettings->lteOwdMinLongTerm + temp2;
+            }
+            else
+            {
+                std::cout<< " [ERROR] p_systemStateSettings->lteOwdMinLongTerm not configured! " << std::endl;
+            }
+          }
+          measurementManager.measureCycleStart(vnicTSA.getStartSn1()); //start next measurement cycle from start-Sn
+        }
+ 
 
         int lteowd = p_systemStateSettings->currentTimeMs - vnicTSA.getTimeStampMillis();
         if (p_systemStateSettings->gStartTime >= 0 && abs(lteowd) < 10000)
         {
             (measurementManager.lte)->updateLastPacketOwd(lteowd);
+            p_systemStateSettings->lteLinkCtrlOwd = lteowd;
         }
         break;
     }
@@ -660,6 +755,7 @@ void DataReceive::receiveWifiPacket(char *packet)
         break;
     case 0xF807:
     {
+        p_systemStateSettings->wifiLinkFailureFlag = 1;  
         ipHeader.init((unsigned char *)packet, dataOffset + p_systemStateSettings->sizeofDlGmaDataHeader);
         length = ipHeader.getTotalLength();
         if (length <= maxPktLen)
@@ -672,20 +768,31 @@ void DataReceive::receiveWifiPacket(char *packet)
             case 3: //p_systemStateSettings->nonRealtimelModeFlowId)
             {
                 p_systemStateSettings->wifiReceiveNrtBytes += length;
-                if (measurementManager.measurementOn)
+                if (measurementManager.measureCycleStarted())//measurement cycle started.
                 {
-                    if (measurementManager.measureIntervalStartConditionCheck(reorderingManager.nrtReorderingWorker.GetNextSn()))
+                    int nextSn = reorderingManager.nrtReorderingWorker.GetNextSn();
+                    if (measurementManager.measureIntervalStartConditionCheck(mSeqNum, nextSn))
                     { //received a packet with sn larger than measurement start_sn
                         //start the first measurement interval
                         measurementManager.measureIntervalStart(systemTimeMsLong);
                     }
-                    (measurementManager.wifi)->updateLastPacketOwd(p_systemStateSettings->currentTimeMs - tx_time);
-                    (measurementManager.wifi)->updateLsn(lSeqNum);
-                    measurementManager.measureIntervalEndCheck(systemTimeMsLong);
+                    //for data, we only measure them if the measurement interval is tarted.
+                    if (measurementManager.measureIntervalStarted())
+                    {
+                        (measurementManager.wifi)->updateLastPacketOwd(p_systemStateSettings->currentTimeMs - tx_time, true);
+                        (measurementManager.wifi)->updateLsn(lSeqNum);
+                        measurementManager.measureIntervalEndCheck(systemTimeMsLong);
+                    }
+                    else
+                    {
+                        //interval not started, we treat it as a contrl msg to update min owd, but not updating the data measurement.
+                        (measurementManager.wifi)->updateLastPacketOwd(p_systemStateSettings->currentTimeMs - tx_time);
+                        (measurementManager.wifi)->updateLsn(lSeqNum);
+                    }
                 }
                 else if (measurementManager.restart(systemTimeMsLong))
                 {
-                   measurementManager.measureCycleStart(flowNum);
+                   measurementManager.measureCycleStart(mSeqNum);
                 }
 
                 if (p_systemStateSettings->splitEnable == 1 || p_systemStateSettings->currentTimeMs < p_systemStateSettings->reorderStopTime)
@@ -834,6 +941,8 @@ void DataReceive::receiveLtePacket(char *packet)
         break;
     case 0xF807:
     {
+        p_systemStateSettings->lteLinkFailureFlag = 1;  
+     
         ipHeader.init((unsigned char *)packet, dataOffset + p_systemStateSettings->sizeofDlGmaDataHeader);
         length = ipHeader.getTotalLength();
         if (length <= maxPktLen)
@@ -846,20 +955,31 @@ void DataReceive::receiveLtePacket(char *packet)
             case 3: //p_systemStateSettings->nonRealtimelModeFlowId:
             {
                 p_systemStateSettings->lteReceiveNrtBytes += length;
-                if (measurementManager.measurementOn)
+                if (measurementManager.measureCycleStarted())
                 {
-                    if (measurementManager.measureIntervalStartConditionCheck(reorderingManager.nrtReorderingWorker.GetNextSn()))
+                    int nextSn = reorderingManager.nrtReorderingWorker.GetNextSn();
+                    if (measurementManager.measureIntervalStartConditionCheck(mSeqNum, nextSn))
                     { //received a packet with sn larger than measurement start_sn
                         //start the first measurement interval
                         measurementManager.measureIntervalStart(systemTimeMsLong);
                     }
-                    (measurementManager.lte)->updateLastPacketOwd(p_systemStateSettings->currentTimeMs - tx_time);
-                    (measurementManager.lte)->updateLsn(lSeqNum);
-                    measurementManager.measureIntervalEndCheck(systemTimeMsLong);
+                    //for data, we only measure them if the measurement interval is tarted.
+                    if (measurementManager.measureIntervalStarted())
+                    {
+                        (measurementManager.lte)->updateLastPacketOwd(p_systemStateSettings->currentTimeMs - tx_time, true);
+                        (measurementManager.lte)->updateLsn(lSeqNum);
+                        measurementManager.measureIntervalEndCheck(systemTimeMsLong);
+                    }
+                    else
+                    {
+                        //interval not started, we treat it as a contrl msg to update min owd, but not updating the data measurement.
+                        (measurementManager.lte)->updateLastPacketOwd(p_systemStateSettings->currentTimeMs - tx_time);
+                        (measurementManager.lte)->updateLsn(lSeqNum);
+                    }
                 }
                 else if (measurementManager.restart(systemTimeMsLong))
                 {
-                   measurementManager.measureCycleStart(flowNum);
+                   measurementManager.measureCycleStart(mSeqNum);
                 }
                 
                 if (p_systemStateSettings->splitEnable == 1 || p_systemStateSettings->currentTimeMs < p_systemStateSettings->reorderStopTime)
@@ -999,15 +1119,10 @@ void DataReceive::updataWifiChannel(GMASocket wifiFd)
 bool DataReceive::updataLteChannel(GMASocket lteFd)
 {
     lteudp_fd = lteFd;
-    if (lteudp_fd != GMA_INVALID_SOCKET)
-    {
-        wakeupSelect();
-        return true;
-    }
-    else
-    {
-        return false;
-    }
+    if (lteFd == GMA_INVALID_SOCKET)
+     return false;
+    wakeupSelect();
+    return true;
 }
 
 int DataReceive::rollOverDiff2(int x, int y, int max)
@@ -1081,6 +1196,7 @@ bool DataReceive::setupUdpSocket()
     {
         return false;
     }
+
     udpInaddr.sin_family = AF_INET;
     udpInaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     udpInaddr.sin_port = 0;

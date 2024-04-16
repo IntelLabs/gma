@@ -459,13 +459,18 @@ bool send_txc_message_to_server(char* buf)
 		int max_rate = std::stoi(tokens[3]);
 		int nrt_rate = std::stoi(tokens[4]);
 		int max_delay = std::stoi(tokens[5]);
-		if (max_rate <=0 || nrt_rate <=0 || max_delay <0)
-		{
-			printf("Wrong configuration\n");
-			return false;
-		}
-		txcmsg->client_index = idNum;
 		txcmsg->link_id = (unsigned char)(std::stoi(tokens[2]) & 0XFF);
+		
+		if (txcmsg->link_id < 2)  //0: Wi-Fi 1: LTE: 2: enable tx offset 3: disable tx offset
+		{
+			if (max_rate <=0 || nrt_rate <=0 || max_delay <0)
+			{
+				printf("Wrong configuration\n");
+				return false;
+			}
+		}
+		
+		txcmsg->client_index = idNum;
 		txcmsg->max_rate = max_rate;
 		txcmsg->nrt_rate = nrt_rate;
 		txcmsg->max_delay = max_delay;

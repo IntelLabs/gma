@@ -545,10 +545,10 @@ int ReorderingWorker::release_in_order_packets()
 						if(queue_time > 0 && queue_time < 1000) //increase timer up to 1 second 
 							HRreorderingTimeout = queue_time + 20;
 
-						stringstream ss;
+						/*stringstream ss;
 						ss << "\n[reordering timeout]" << timeout << " queue time: " << queue_time << endl;
 						p_systemStateSettings->PrintLogs(ss);
-						
+						*/
 						//printf("\n timeout %d  now %d, tx time %d", timeout, p_systemStateSettings->currentTimeMs, tx_timestamp[b_index]);
 						p_systemStateSettings->numOfReorderingTimeout++; 
 						outputHRPacket(ringBuffer[b_index], rcv_PktLen[b_index], rcv_PktSn[b_index], tx_timestamp[b_index]);
