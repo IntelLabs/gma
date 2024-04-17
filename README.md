@@ -210,7 +210,7 @@ Traffic Steering Command: tsc [clientIndex] [RTtsc] [NRTtsc] [NRTk1] [NRTk2] [NR
                NRTtsc: traffic steering command for NRT (Non Real-Time or Best-Effort) flow
                  0: disable dynamic DL splitting for NRT flow
                  3: enable dynamic DL splitting for NRT flow with fast loss detection
-		 4: enable dynamic DL splitting for NRT flow without fast loss detection
+		             4: enable dynamic DL splitting for NRT flow without fast loss detection
                  16: no update for NRT flow
                NRTk1: the Wi-Fi burst size (pkts), e.g. 16
                NRTK2: the LTE burst size, e.g. 16 
