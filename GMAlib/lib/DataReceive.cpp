@@ -204,12 +204,23 @@ void DataReceive::receiveWifiControl(char *packet)
                     if (tscMessage.getDLDynamicSplittingEnabled() >= 3)
                     {
                      p_systemStateSettings->SPLIT_ALGORITHM = 3;
-                     p_systemStateSettings->minSplitAdjustmentStep =  tscMessage.getDLDynamicSplittingEnabled()  - 3;  //   
+                     //p_systemStateSettings->minSplitAdjustmentStep =  tscMessage.getDLDynamicSplittingEnabled()  - 3;  //  
+                     if (tscMessage.getDLDynamicSplittingEnabled() == 4) //disable fast loss detection
+                      {
+                        p_systemStateSettings->FAST_LOSS_DETECTION = false; 
+                        printf("\n fast loss detection disbaled\n");
+                      }
+                     else 
+                     {
+                        p_systemStateSettings->FAST_LOSS_DETECTION = true; 
+                        printf("\n fast loss detection enabled\n");
+                     }
                     }
                     else
                     {
                       p_systemStateSettings->SPLIT_ALGORITHM = tscMessage.getDLDynamicSplittingEnabled();
                     }
+
                 }
                 p_systemStateSettings->wifiSplitFactor = tscMessage.getK1();
                 p_systemStateSettings->lteSplitFactor = tscMessage.getK2();
@@ -500,7 +511,17 @@ void DataReceive::receiveLteControl(char *packet)
                     if (tscMessage.getDLDynamicSplittingEnabled() >= 3)
                     {
                      p_systemStateSettings->SPLIT_ALGORITHM = 3;
-                     p_systemStateSettings->minSplitAdjustmentStep =  tscMessage.getDLDynamicSplittingEnabled()  - 3;  //   
+                     //p_systemStateSettings->minSplitAdjustmentStep =  tscMessage.getDLDynamicSplittingEnabled()  - 3;  //  
+                     if (tscMessage.getDLDynamicSplittingEnabled() == 4) //disable fast loss detection
+                      {
+                        p_systemStateSettings->FAST_LOSS_DETECTION = false; 
+                        printf("\n fast loss detection disbaled\n");
+                      }
+                     else 
+                     {
+                        p_systemStateSettings->FAST_LOSS_DETECTION = true; 
+                        printf("\n fast loss detection enabled\n");
+                     }
                     }
                     else
                     {

@@ -559,7 +559,9 @@ int ReorderingWorker::release_in_order_packets()
 						ul_packet_type = rcv_PktType[b_index];
 					}
 					else
-					{ 
+					{
+					if (p_systemStateSettings->FAST_LOSS_DETECTION)
+					{
 						//multi-link reordering step2: release in-order packets
 						int next = maxLteSn;
 						if (rollover_diff2(next, maxWifiSn) > 0)
@@ -600,6 +602,7 @@ int ReorderingWorker::release_in_order_packets()
 						}
 						else 
 							break;
+					}
 					}
 				}
 		   } 

@@ -60,6 +60,7 @@ public:
     int TOLERANCE_DELAY_H; //decrease wifi
     int TOLERANCE_DELAY_L; //increase wifi
     int SPLIT_ALGORITHM; //1: delay algorithm; 2: delay and loss algorithm; 3: gma2 algorithm
+    bool FAST_LOSS_DETECTION = true; //default: enable fast loss detection
     int INITIAL_PACKETS_BEFORE_LOSS;  //10^9
     //end/////////////////////////////////////////
 
