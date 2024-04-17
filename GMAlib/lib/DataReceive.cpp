@@ -208,7 +208,7 @@ void DataReceive::receiveWifiControl(char *packet)
                      if (tscMessage.getDLDynamicSplittingEnabled() == 4) //disable fast loss detection
                       {
                         p_systemStateSettings->FAST_LOSS_DETECTION = false; 
-                        printf("\n fast loss detection disbaled\n");
+                        printf("\n fast loss detection disabled\n");
                       }
                      else 
                      {
